@@ -1,121 +1,125 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useCallback, useEffect, useRef } from 'react'
+import { NameEntry } from './components/NameEntry'
+import { Controls } from './components/Controls'
+import { BubblesPane } from './components/BubblesPane'
+import { TranscriptPane } from './components/TranscriptPane'
+import { useSessionStore } from './store'
+import { createDetector, type Detector } from './detection/detector'
+import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
 import './App.css'
 
+const DEFAULT_MODEL_URL =
+  'https://ccoreilly.github.io/vosk-browser/models/vosk-model-small-en-us-0.15.tar.gz'
+
+const MODEL_URL = import.meta.env.VITE_VOSK_MODEL_URL ?? DEFAULT_MODEL_URL
+
+const FREQUENCY_WINDOW_MS = 30_000
+
 function App() {
-  const [count, setCount] = useState(0)
+  const engineRef = useRef<VoskEngine | null>(null)
+  const detectorRef = useRef<Detector | null>(null)
+
+  const wordList = useSessionStore((s) => s.wordList)
+  const sensitivity = useSessionStore((s) => s.sensitivity)
+  const setStatus = useSessionStore((s) => s.setStatus)
+  const addTranscriptLine = useSessionStore((s) => s.addTranscriptLine)
+  const setPartial = useSessionStore((s) => s.setPartial)
+  const applyDetections = useSessionStore((s) => s.applyDetections)
+  const resetSession = useSessionStore((s) => s.resetSession)
+
+  // Lazy-init engine and detector once.
+  if (!engineRef.current) engineRef.current = createVoskEngine()
+  if (!detectorRef.current) {
+    detectorRef.current = createDetector({
+      wordList,
+      sensitivity,
+      frequencyWindowMs: FREQUENCY_WINDOW_MS,
+    })
+  }
+
+  // Keep detector config in sync with store (only while idle — Controls
+  // disables the selects during listening, so this is safe).
+  useEffect(() => {
+    detectorRef.current?.updateConfig({ wordList, sensitivity })
+  }, [wordList, sensitivity])
+
+  // Clean up on unmount.
+  useEffect(() => {
+    return () => {
+      void engineRef.current?.stop()
+    }
+  }, [])
+
+  const handleStart = useCallback(async () => {
+    const engine = engineRef.current
+    const detector = detectorRef.current
+    if (!engine || !detector) return
+
+    resetSession()
+    detector.reset()
+
+    try {
+      if (!engine.isModelLoaded()) {
+        setStatus('loading-model')
+        await engine.loadModel(MODEL_URL)
+      }
+
+      setStatus('listening')
+      await engine.start({
+        onFinal: (text) => {
+          addTranscriptLine(text)
+          const detections = detector.process(text, Date.now())
+          if (detections.length > 0) applyDetections(detections)
+        },
+        onPartial: (text) => setPartial(text),
+        onError: (err) => {
+          const msg = err instanceof Error ? err.message : String(err)
+          setStatus('error', msg)
+        },
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setStatus('error', msg)
+    }
+  }, [
+    resetSession,
+    setStatus,
+    addTranscriptLine,
+    setPartial,
+    applyDetections,
+  ])
+
+  const handleStop = useCallback(async () => {
+    const engine = engineRef.current
+    if (!engine) return
+    await engine.stop()
+    setStatus('ready')
+  }, [setStatus])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      <header className="app-header">
+        <div className="brand">
+          <span className="brand-dot" />
+          <h1>Ah-Counter</h1>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
+        <div className="header-controls">
+          <NameEntry />
+          <Controls onStart={handleStart} onStop={handleStop} />
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
+      <main className="app-main">
+        <BubblesPane />
+        <TranscriptPane />
+      </main>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <footer className="app-footer">
+        <span className="dim">
+          Model: Vosk small-en-us · session-only, nothing is stored
+        </span>
+      </footer>
+    </div>
   )
 }
 
