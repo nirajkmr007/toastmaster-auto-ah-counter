@@ -8,11 +8,14 @@ export function TranscriptPane() {
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
-  // Auto-scroll to bottom on new content.
+  // Auto-scroll to bottom on new content — but only if the user is already
+  // near the bottom. If they've scrolled up to re-read something, don't yank
+  // them back down.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
-    el.scrollTop = el.scrollHeight
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (distanceFromBottom < 80) el.scrollTop = el.scrollHeight
   }, [transcript, partialText])
 
   return (

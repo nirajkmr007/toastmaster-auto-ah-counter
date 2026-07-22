@@ -41,6 +41,8 @@ export interface Detector {
 
 const CONTEXT_RADIUS = 4
 
+const SUBJECT_PRONOUNS = new Set(['i', 'we', 'you', 'she', 'he', 'they'])
+
 const normalizeSet = (words: string[]): Set<string> =>
   new Set(words.map((w) => w.toLowerCase().trim()).filter(Boolean))
 
@@ -81,7 +83,11 @@ export function createDetector(initial: DetectorConfig): Detector {
       return prev !== undefined
     }
     if (word === 'like') {
+      // Verb usage: "I like X", "we like Y", "they like Z" — subject pronoun
+      // right before is a strong signal this isn't a filler.
+      if (prev && SUBJECT_PRONOUNS.has(prev)) return true
       if (!next) return false
+      // "like to" (infinitive), "like a/an" (simile), "like 5" (approximation).
       if (['to', 'a', 'an'].includes(next)) return true
       if (/^\d/.test(next)) return true
       return false

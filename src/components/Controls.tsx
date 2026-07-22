@@ -73,7 +73,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
             onClick={onStart}
             disabled={!canPressStart || isBusy}
           >
-            {isBusy ? 'Loading model…' : 'Start listening'}
+            {isBusy ? 'Starting…' : 'Start listening'}
           </button>
         )}
       </div>

@@ -58,13 +58,17 @@ function App() {
     resetSession()
     detector.reset()
 
+    // Hold the UI in the "starting" state for the entire startup — including
+    // the mic-permission prompt — so Stop can't be clicked before capture is
+    // actually running (which would leak a mic stream started later) and a
+    // second Start click can't spawn a second recognizer.
+    setStatus('loading-model')
+
     try {
       if (!engine.isModelLoaded()) {
-        setStatus('loading-model')
         await engine.loadModel(MODEL_URL)
       }
 
-      setStatus('listening')
       await engine.start({
         onFinal: (text) => {
           addTranscriptLine(text)
@@ -85,6 +89,7 @@ function App() {
           setStatus('error', msg)
         },
       })
+      setStatus('listening')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setStatus('error', msg)
