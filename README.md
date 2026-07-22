@@ -33,8 +33,15 @@ per-speaker counters and a streaming transcript.
 
 ## Getting started
 
+First-time setup (installs Node 22 via Homebrew/apt if missing, then `npm install`):
+
 ```bash
-npm install
+./setup.sh
+```
+
+Then:
+
+```bash
 npm run dev
 ```
 
