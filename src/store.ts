@@ -34,7 +34,10 @@ export interface SessionState {
   sessionEndAt: number | null
   showReport: boolean
 
+  targetDurationMs: number | null // null = no auto-stop
+
   setSpeakerName: (name: string) => void
+  setTargetDuration: (ms: number | null) => void
   setStatus: (status: EngineStatus, errorMessage?: string | null) => void
   setSensitivity: (s: Sensitivity) => void
   setPreset: (name: string, list: WordList) => void
@@ -72,7 +75,11 @@ export const useSessionStore = create<SessionState>((set) => ({
   sessionEndAt: null,
   showReport: false,
 
+  targetDurationMs: null,
+
   setSpeakerName: (name) => set({ speakerName: name }),
+
+  setTargetDuration: (ms) => set({ targetDurationMs: ms }),
 
   setStatus: (status, errorMessage = null) => set({ status, errorMessage }),
 

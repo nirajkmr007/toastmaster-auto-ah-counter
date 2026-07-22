@@ -20,6 +20,13 @@
 .brand {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.brand-title {
+  display: flex;
+  align-items: center;
   gap: 12px;
 }
 .brand h1 {
@@ -32,6 +39,59 @@
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ---- timer ---- */
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--text);
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.timer-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.timer-elapsed {
+  font-weight: 600;
+  color: var(--text-h);
+  letter-spacing: 0.02em;
+}
+.timer-target {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.timer-live .timer-dot {
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(82, 214, 147, 0.7);
+  animation: timer-pulse 1.4s ease-in-out infinite;
+}
+.timer-warning {
+  border-color: var(--stop);
+  color: var(--stop);
+  box-shadow: 0 0 12px rgba(255, 92, 124, 0.25);
+}
+.timer-warning .timer-dot {
+  background: var(--stop);
+  box-shadow: 0 0 10px rgba(255, 92, 124, 0.9);
+  animation: timer-pulse 0.6s ease-in-out infinite;
+}
+.timer-warning .timer-elapsed {
+  color: var(--stop);
+}
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
 }
 
 .header-controls {

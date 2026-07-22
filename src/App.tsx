@@ -4,6 +4,7 @@ import { Controls } from './components/Controls'
 import { BubblesPane } from './components/BubblesPane'
 import { TranscriptPane } from './components/TranscriptPane'
 import { SessionReport } from './components/SessionReport'
+import { Timer } from './components/Timer'
 import { useSessionStore } from './store'
 import { createDetector, type Detector } from './detection/detector'
 import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
@@ -150,8 +151,11 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="brand">
-          <span className="brand-dot" />
-          <h1>Ah-Counter</h1>
+          <div className="brand-title">
+            <span className="brand-dot" />
+            <h1>Ah-Counter</h1>
+          </div>
+          <Timer onAutoStop={handleStop} />
         </div>
         <div className="header-controls">
           <NameEntry />

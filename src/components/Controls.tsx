@@ -9,6 +9,16 @@ interface ControlsProps {
 
 const SENSITIVITY_LEVELS: Sensitivity[] = ['strict', 'balanced', 'loose']
 
+// Common Toastmasters durations. Values are in milliseconds; null = no limit.
+const TIME_LIMIT_OPTIONS: { label: string; ms: number | null }[] = [
+  { label: 'No limit', ms: null },
+  { label: '1 min', ms: 60_000 },
+  { label: '2 min', ms: 120_000 },
+  { label: '3 min', ms: 180_000 },
+  { label: '5 min', ms: 300_000 },
+  { label: '7 min', ms: 420_000 },
+]
+
 export function Controls({ onStart, onStop }: ControlsProps) {
   const status = useSessionStore((s) => s.status)
   const sensitivity = useSessionStore((s) => s.sensitivity)
@@ -17,6 +27,8 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   const setPreset = useSessionStore((s) => s.setPreset)
   const speakerName = useSessionStore((s) => s.speakerName)
   const errorMessage = useSessionStore((s) => s.errorMessage)
+  const targetDurationMs = useSessionStore((s) => s.targetDurationMs)
+  const setTargetDuration = useSessionStore((s) => s.setTargetDuration)
 
   const canStart = status === 'idle' || status === 'ready'
   const isBusy = status === 'loading-model'
@@ -53,6 +65,30 @@ export function Controls({ onStart, onStop }: ControlsProps) {
             {SENSITIVITY_LEVELS.map((s) => (
               <option key={s} value={s}>
                 {s[0].toUpperCase() + s.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="select-group">
+          <label htmlFor="time-limit">Time limit</label>
+          <select
+            id="time-limit"
+            value={targetDurationMs === null ? 'none' : String(targetDurationMs)}
+            onChange={(e) =>
+              setTargetDuration(
+                e.target.value === 'none' ? null : Number(e.target.value)
+              )
+            }
+            disabled={isRunning || isBusy}
+            title="Auto-stop recording when this duration is reached"
+          >
+            {TIME_LIMIT_OPTIONS.map((opt) => (
+              <option
+                key={opt.label}
+                value={opt.ms === null ? 'none' : String(opt.ms)}
+              >
+                {opt.label}
               </option>
             ))}
           </select>
