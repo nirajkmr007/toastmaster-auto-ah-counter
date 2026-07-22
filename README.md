@@ -4,6 +4,11 @@ A live, browser-only web app that listens to Toastmasters speakers and counts
 their filler words ("um," "uh," "like," "so"…) in real time with animated
 per-speaker counters and a streaming transcript.
 
+**Live app:** https://nirajkmr007.github.io/toastmaster-auto-ah-counter/
+
+Chrome or Edge, allow microphone access when prompted. First load fetches the
+~40 MB Vosk model — subsequent starts are instant.
+
 ## Design at a glance
 
 - **Client-only.** No backend. Every tab does its own audio capture, STT, and
