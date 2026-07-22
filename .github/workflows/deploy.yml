@@ -36,6 +36,10 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Auto-enable the Pages site on first run so a fresh clone doesn't
+          # 404 here. Requires `pages: write` (already granted above).
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
