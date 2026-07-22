@@ -30,6 +30,10 @@ export interface SessionState {
   counts: Record<string, number>
   detectionLog: Detection[] // full log for the session (used for animation trigger + scoring)
 
+  sessionStartAt: number | null
+  sessionEndAt: number | null
+  showReport: boolean
+
   setSpeakerName: (name: string) => void
   setStatus: (status: EngineStatus, errorMessage?: string | null) => void
   setSensitivity: (s: Sensitivity) => void
@@ -39,6 +43,12 @@ export interface SessionState {
   setPartial: (text: string) => void
 
   applyDetections: (detections: Detection[]) => void
+
+  markSessionStart: () => void
+  markSessionEnd: () => void
+  openReport: () => void
+  closeReport: () => void
+  startPracticeMode: (word: string) => void
 
   resetSession: () => void
 }
@@ -57,6 +67,10 @@ export const useSessionStore = create<SessionState>((set) => ({
 
   counts: {},
   detectionLog: [],
+
+  sessionStartAt: null,
+  sessionEndAt: null,
+  showReport: false,
 
   setSpeakerName: (name) => set({ speakerName: name }),
 
@@ -90,12 +104,50 @@ export const useSessionStore = create<SessionState>((set) => ({
       }
     }),
 
+  markSessionStart: () =>
+    set({ sessionStartAt: Date.now(), sessionEndAt: null }),
+
+  markSessionEnd: () => set({ sessionEndAt: Date.now() }),
+
+  openReport: () => set({ showReport: true }),
+
+  closeReport: () => set({ showReport: false }),
+
+  startPracticeMode: (word) =>
+    set((state) => {
+      const isPhrase = word.includes(' ')
+      const focused: WordList = {
+        soundFillers: [],
+        crutchWords: isPhrase ? [] : [word],
+        crutchPhrases: isPhrase ? [word] : [],
+      }
+      return {
+        wordList: focused,
+        sensitivity: 'strict' as const,
+        presetName: `Practice: ${word}`,
+        transcript: [],
+        partialText: '',
+        counts: {},
+        detectionLog: [],
+        sessionStartAt: null,
+        sessionEndAt: null,
+        showReport: false,
+        status: 'ready' as const,
+        errorMessage: null,
+        // keep speakerName so they don't have to retype it
+        speakerName: state.speakerName,
+      }
+    }),
+
   resetSession: () =>
     set({
       transcript: [],
       partialText: '',
       counts: {},
       detectionLog: [],
+      sessionStartAt: null,
+      sessionEndAt: null,
+      showReport: false,
       status: 'idle',
       errorMessage: null,
     }),

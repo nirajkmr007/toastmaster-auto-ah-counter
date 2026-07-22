@@ -3,6 +3,7 @@ import { NameEntry } from './components/NameEntry'
 import { Controls } from './components/Controls'
 import { BubblesPane } from './components/BubblesPane'
 import { TranscriptPane } from './components/TranscriptPane'
+import { SessionReport } from './components/SessionReport'
 import { useSessionStore } from './store'
 import { createDetector, type Detector } from './detection/detector'
 import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
@@ -26,6 +27,10 @@ function App() {
   const setPartial = useSessionStore((s) => s.setPartial)
   const applyDetections = useSessionStore((s) => s.applyDetections)
   const resetSession = useSessionStore((s) => s.resetSession)
+  const markSessionStart = useSessionStore((s) => s.markSessionStart)
+  const markSessionEnd = useSessionStore((s) => s.markSessionEnd)
+  const openReport = useSessionStore((s) => s.openReport)
+  const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
 
   // Lazy-init engine and detector once.
   if (!engineRef.current) engineRef.current = createVoskEngine()
@@ -89,6 +94,7 @@ function App() {
           setStatus('error', msg)
         },
       })
+      markSessionStart()
       setStatus('listening')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -100,14 +106,19 @@ function App() {
     addTranscriptLine,
     setPartial,
     applyDetections,
+    markSessionStart,
   ])
 
   const handleStop = useCallback(async () => {
     const engine = engineRef.current
     if (!engine) return
     await engine.stop()
+    markSessionEnd()
     setStatus('ready')
-  }, [setStatus])
+    // Only surface the report if there's something worth showing.
+    const { detectionLog, transcript } = useSessionStore.getState()
+    if (detectionLog.length > 0 || transcript.length > 0) openReport()
+  }, [setStatus, markSessionEnd, openReport])
 
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
   const handleCopyLog = useCallback(async () => {
@@ -157,15 +168,29 @@ function App() {
         <span className="dim">
           Model: Vosk small-en-us · session-only, nothing is stored
         </span>
-        <button
-          type="button"
-          className="footer-btn"
-          onClick={handleCopyLog}
-          title="Copy session state as JSON (counts, detections, transcript)"
-        >
-          {copyState === 'copied' ? 'Copied ✓' : 'Copy session log'}
-        </button>
+        <div className="footer-actions">
+          {hasEndedSession ? (
+            <button
+              type="button"
+              className="footer-btn"
+              onClick={openReport}
+              title="Reopen the last session report"
+            >
+              View report
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="footer-btn"
+            onClick={handleCopyLog}
+            title="Copy session state as JSON (counts, detections, transcript)"
+          >
+            {copyState === 'copied' ? 'Copied ✓' : 'Copy session log'}
+          </button>
+        </div>
       </footer>
+
+      <SessionReport />
     </div>
   )
 }
