@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { NameEntry } from './components/NameEntry'
 import { Controls } from './components/Controls'
 import { BubblesPane } from './components/BubblesPane'
@@ -69,7 +69,15 @@ function App() {
         onFinal: (text) => {
           addTranscriptLine(text)
           const detections = detector.process(text, Date.now())
-          if (detections.length > 0) applyDetections(detections)
+          if (detections.length > 0) {
+            applyDetections(detections)
+            // Useful for AH-5 offline scoring: each detection logged with
+            // the tokens on either side of the hit.
+            for (const d of detections) {
+              // eslint-disable-next-line no-console
+              console.log('[ah-counter]', d.word, '·', d.context)
+            }
+          }
         },
         onPartial: (text) => setPartial(text),
         onError: (err) => {
@@ -96,6 +104,32 @@ function App() {
     setStatus('ready')
   }, [setStatus])
 
+  const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
+  const handleCopyLog = useCallback(async () => {
+    const s = useSessionStore.getState()
+    const payload = {
+      speaker: s.speakerName,
+      preset: s.presetName,
+      sensitivity: s.sensitivity,
+      counts: s.counts,
+      detections: s.detectionLog.map((d) => ({
+        word: d.word,
+        context: d.context,
+        timestamp: d.timestamp,
+      })),
+      transcript: s.transcript.map((t) => t.text),
+    }
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+      setCopyState('copied')
+      setTimeout(() => setCopyState('idle'), 1500)
+    } catch (err) {
+      // Fallback: log so user can still grab it from DevTools.
+      // eslint-disable-next-line no-console
+      console.log('[ah-counter session log]', payload, err)
+    }
+  }, [])
+
   return (
     <div className="app">
       <header className="app-header">
@@ -118,6 +152,14 @@ function App() {
         <span className="dim">
           Model: Vosk small-en-us · session-only, nothing is stored
         </span>
+        <button
+          type="button"
+          className="footer-btn"
+          onClick={handleCopyLog}
+          title="Copy session state as JSON (counts, detections, transcript)"
+        >
+          {copyState === 'copied' ? 'Copied ✓' : 'Copy session log'}
+        </button>
       </footer>
     </div>
   )

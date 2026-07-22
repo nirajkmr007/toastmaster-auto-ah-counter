@@ -28,7 +28,7 @@ export interface SessionState {
   partialText: string
 
   counts: Record<string, number>
-  recentDetections: Detection[] // last N, for animation triggers
+  detectionLog: Detection[] // full log for the session (used for animation trigger + scoring)
 
   setSpeakerName: (name: string) => void
   setStatus: (status: EngineStatus, errorMessage?: string | null) => void
@@ -43,8 +43,6 @@ export interface SessionState {
   resetSession: () => void
 }
 
-const MAX_RECENT_DETECTIONS = 20
-
 export const useSessionStore = create<SessionState>((set) => ({
   speakerName: '',
   status: 'idle',
@@ -58,7 +56,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   partialText: '',
 
   counts: {},
-  recentDetections: [],
+  detectionLog: [],
 
   setSpeakerName: (name) => set({ speakerName: name }),
 
@@ -86,11 +84,10 @@ export const useSessionStore = create<SessionState>((set) => ({
       for (const d of detections) {
         nextCounts[d.word] = (nextCounts[d.word] ?? 0) + 1
       }
-      const combined = [...state.recentDetections, ...detections]
-      const trimmed = combined.slice(
-        Math.max(0, combined.length - MAX_RECENT_DETECTIONS)
-      )
-      return { counts: nextCounts, recentDetections: trimmed }
+      return {
+        counts: nextCounts,
+        detectionLog: [...state.detectionLog, ...detections],
+      }
     }),
 
   resetSession: () =>
@@ -98,7 +95,7 @@ export const useSessionStore = create<SessionState>((set) => ({
       transcript: [],
       partialText: '',
       counts: {},
-      recentDetections: [],
+      detectionLog: [],
       status: 'idle',
       errorMessage: null,
     }),
