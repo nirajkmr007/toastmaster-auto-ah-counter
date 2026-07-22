@@ -45,6 +45,27 @@ Then:
 npm run dev
 ```
 
+## Deploy (GitHub Pages)
+
+The app is a fully static bundle, so any static host works. This repo ships a
+GH Pages workflow (`.github/workflows/deploy.yml`) that builds and publishes
+on every push to `main`. One-time setup:
+
+1. Push the repo to GitHub as **public** at
+   `github.com/<you>/toastmaster-ah-counter`.
+2. **Settings → Pages → Source: GitHub Actions** (not "Deploy from a branch").
+3. Push to `main`. The workflow builds, uploads `dist/`, and deploys to
+   `https://<you>.github.io/toastmaster-ah-counter/`.
+
+Notes:
+
+- The subpath is hard-coded in `vite.config.ts` (`base: '/toastmaster-ah-counter/'`
+  for `build`; dev stays at `/`). If you rename the repo, update it there.
+- HTTPS is automatic — required, because `getUserMedia` won't work over HTTP.
+- The Vosk model (~40 MB) is still fetched from `ccoreilly.github.io` on first
+  Start. If that origin ever goes down, drop the `.tar.gz` into
+  `public/models/` and set `VITE_VOSK_MODEL_URL` in `.env`.
+
 ## Roadmap
 
 **v1 scope**
