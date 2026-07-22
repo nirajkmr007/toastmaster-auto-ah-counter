@@ -1,4 +1,4 @@
-# toastmaster-ah-counter
+# toastmaster-auto-ah-counter
 
 A live, browser-only web app that listens to Toastmasters speakers and counts
 their filler words ("um," "uh," "like," "so"…) in real time with animated
@@ -52,14 +52,14 @@ GH Pages workflow (`.github/workflows/deploy.yml`) that builds and publishes
 on every push to `main`. One-time setup:
 
 1. Push the repo to GitHub as **public** at
-   `github.com/<you>/toastmaster-ah-counter`.
+   `github.com/<you>/toastmaster-auto-ah-counter`.
 2. **Settings → Pages → Source: GitHub Actions** (not "Deploy from a branch").
 3. Push to `main`. The workflow builds, uploads `dist/`, and deploys to
-   `https://<you>.github.io/toastmaster-ah-counter/`.
+   `https://<you>.github.io/toastmaster-auto-ah-counter/`.
 
 Notes:
 
-- The subpath is hard-coded in `vite.config.ts` (`base: '/toastmaster-ah-counter/'`
+- The subpath is hard-coded in `vite.config.ts` (`base: '/toastmaster-auto-ah-counter/'`
   for `build`; dev stays at `/`). If you rename the repo, update it there.
 - HTTPS is automatic — required, because `getUserMedia` won't work over HTTP.
 - The Vosk model (~40 MB) is still fetched from `ccoreilly.github.io` on first

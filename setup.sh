@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Idempotent one-shot setup for toastmaster-ah-counter.
+# Idempotent one-shot setup for toastmaster-auto-ah-counter.
 # Ensures Node 20+ is available, then installs project deps.
 # Safe to re-run.
 
