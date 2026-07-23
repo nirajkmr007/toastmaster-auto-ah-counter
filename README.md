@@ -50,6 +50,72 @@ Then:
 npm run dev
 ```
 
+## Choosing a model
+
+The app ships with three built-in Vosk models — pick from the **Model**
+dropdown in the header. Larger models are more accurate but slower to
+download on first use.
+
+| ID                     | Language | Size    | Notes                                            |
+| ---------------------- | -------- | ------- | ------------------------------------------------ |
+| `vosk-small-en-us`     | en-US    | ~40 MB  | Default. Fast, decent accuracy.                  |
+| `vosk-small-en-in`     | en-IN    | ~40 MB  | Tuned for Indian English pronunciation.          |
+| `vosk-en-us-lgraph`    | en-US    | ~130 MB | More accurate. Bigger first-load download.       |
+
+Models are downloaded once per browser (HTTP-cached) and stream audio through
+a Web Worker locally — nothing leaves the tab.
+
+## Adding a new model
+
+The catalog lives in [`src/audio/models.ts`](src/audio/models.ts). To add a
+new Vosk model, append an entry:
+
+```ts
+{
+  id: 'vosk-small-fr',
+  name: 'Vosk small (fr)',
+  language: 'fr',
+  approxSizeMB: 40,
+  description: 'French, small footprint.',
+  url: 'https://example.com/path/to/vosk-model-small-fr-0.22.tar.gz',
+  engineType: 'vosk',
+}
+```
+
+The model must be a `.tar.gz` in vosk-browser's expected format (Kaldi
+model directory tar-gzipped at the root). See
+[alphacephei.com/vosk/models](https://alphacephei.com/vosk/models) for
+the canonical model listing.
+
+**Self-hosting a model.** If you'd rather not depend on a third-party
+mirror (or need offline use), drop the tarball into `public/models/`,
+then point the URL at the deployed asset path:
+
+```ts
+url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-us-0.15.tar.gz`
+```
+
+Files under `public/` are copied verbatim into `dist/` at build time.
+
+## Adding a new STT engine (pluggable architecture)
+
+The Vosk-specific code is isolated behind the
+[`SttEngine`](src/audio/sttEngine.ts) interface. To plug in a different
+recognizer (e.g., the browser-native Web Speech API, whisper.cpp-WASM,
+CrisperWhisper — anything that keeps disfluencies), do four things:
+
+1. **Implement `SttEngine`** in a new file under `src/audio/`, matching the
+   `loadModel` / `start` / `stop` / `isModelLoaded` contract.
+2. **Add your engine type** to `EngineType` in `src/audio/models.ts`
+   (e.g. `'vosk' | 'web-speech'`).
+3. **Wire the factory** in `src/audio/sttEngine.ts` — add a new branch to
+   `createEngine` that returns your factory.
+4. **List your model(s)** in the `MODELS` catalog with the new `engineType`.
+
+No change is needed anywhere else — the store, UI, timer, detection rules,
+session report, and PNG export all keep working, because they only touch the
+`SttEngine` interface.
+
 ## Deploy (GitHub Pages)
 
 The app is a fully static bundle, so any static host works. This repo ships a

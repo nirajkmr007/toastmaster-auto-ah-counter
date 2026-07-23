@@ -7,22 +7,19 @@ import { SessionReport } from './components/SessionReport'
 import { Timer } from './components/Timer'
 import { useSessionStore } from './store'
 import { createDetector, type Detector } from './detection/detector'
-import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
+import { createEngine, type SttEngine } from './audio/sttEngine'
+import { getModel } from './audio/models'
 import './App.css'
-
-const DEFAULT_MODEL_URL =
-  'https://ccoreilly.github.io/vosk-browser/models/vosk-model-small-en-us-0.15.tar.gz'
-
-const MODEL_URL = import.meta.env.VITE_VOSK_MODEL_URL ?? DEFAULT_MODEL_URL
 
 const FREQUENCY_WINDOW_MS = 30_000
 
 function App() {
-  const engineRef = useRef<VoskEngine | null>(null)
+  const engineRef = useRef<{ modelId: string; engine: SttEngine } | null>(null)
   const detectorRef = useRef<Detector | null>(null)
 
   const wordList = useSessionStore((s) => s.wordList)
   const sensitivity = useSessionStore((s) => s.sensitivity)
+  const selectedModelId = useSessionStore((s) => s.selectedModelId)
   const setStatus = useSessionStore((s) => s.setStatus)
   const addTranscriptLine = useSessionStore((s) => s.addTranscriptLine)
   const setPartial = useSessionStore((s) => s.setPartial)
@@ -33,8 +30,23 @@ function App() {
   const openReport = useSessionStore((s) => s.openReport)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
 
-  // Lazy-init engine and detector once.
-  if (!engineRef.current) engineRef.current = createVoskEngine()
+  // Lazy-init engine keyed on selected model. If the user switches models,
+  // the current engine is torn down and a fresh one is spun up so the next
+  // Start downloads the new model. Guarded so React StrictMode's
+  // double-render doesn't double-instantiate.
+  if (
+    engineRef.current === null ||
+    engineRef.current.modelId !== selectedModelId
+  ) {
+    if (engineRef.current) {
+      void engineRef.current.engine.stop()
+    }
+    engineRef.current = {
+      modelId: selectedModelId,
+      engine: createEngine(getModel(selectedModelId)),
+    }
+  }
+
   if (!detectorRef.current) {
     detectorRef.current = createDetector({
       wordList,
@@ -52,14 +64,18 @@ function App() {
   // Clean up on unmount.
   useEffect(() => {
     return () => {
-      void engineRef.current?.stop()
+      if (engineRef.current) {
+        void engineRef.current.engine.stop()
+        engineRef.current = null
+      }
     }
   }, [])
 
   const handleStart = useCallback(async () => {
-    const engine = engineRef.current
+    const entry = engineRef.current
     const detector = detectorRef.current
-    if (!engine || !detector) return
+    if (!entry || !detector) return
+    const engine = entry.engine
 
     resetSession()
     detector.reset()
@@ -72,7 +88,7 @@ function App() {
 
     try {
       if (!engine.isModelLoaded()) {
-        await engine.loadModel(MODEL_URL)
+        await engine.loadModel()
       }
 
       await engine.start({
@@ -111,9 +127,9 @@ function App() {
   ])
 
   const handleStop = useCallback(async () => {
-    const engine = engineRef.current
-    if (!engine) return
-    await engine.stop()
+    const entry = engineRef.current
+    if (!entry) return
+    await entry.engine.stop()
     markSessionEnd()
     setStatus('ready')
     // Only surface the report if there's something worth showing.

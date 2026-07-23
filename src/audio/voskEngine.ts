@@ -1,6 +1,5 @@
 /**
- * Thin wrapper around vosk-browser: manages model load, mic capture, and
- * KaldiRecognizer lifecycle. Emits partial and final transcript events.
+ * Vosk implementation of the SttEngine interface.
  *
  * vosk-browser handles its own Web Worker internally; we just feed it audio
  * from a ScriptProcessorNode. ScriptProcessorNode is deprecated but still
@@ -10,21 +9,9 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createModel } from 'vosk-browser'
+import type { SttEngine, SttHandlers } from './sttEngine'
 
-export interface VoskHandlers {
-  onPartial: (text: string) => void
-  onFinal: (text: string) => void
-  onError: (err: unknown) => void
-}
-
-export interface VoskEngine {
-  loadModel: (modelUrl: string) => Promise<void>
-  start: (handlers: VoskHandlers) => Promise<void>
-  stop: () => Promise<void>
-  isModelLoaded: () => boolean
-}
-
-export function createVoskEngine(): VoskEngine {
+export function createVoskEngine(modelUrl: string): SttEngine {
   let model: any = null
   let modelLoadPromise: Promise<any> | null = null
   let recognizer: any = null
@@ -33,13 +20,13 @@ export function createVoskEngine(): VoskEngine {
   let sourceNode: MediaStreamAudioSourceNode | null = null
   let processorNode: ScriptProcessorNode | null = null
 
-  const loadModel = async (modelUrl: string): Promise<void> => {
+  const loadModel = async (): Promise<void> => {
     if (model) return
     if (!modelLoadPromise) modelLoadPromise = createModel(modelUrl)
     model = await modelLoadPromise
   }
 
-  const start = async (handlers: VoskHandlers): Promise<void> => {
+  const start = async (handlers: SttHandlers): Promise<void> => {
     if (!model) throw new Error('Model not loaded — call loadModel() first')
     if (recognizer) throw new Error('Engine already running')
 

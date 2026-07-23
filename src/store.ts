@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Detection, Sensitivity, WordList } from './detection/detector'
 import { TOASTMASTERS_CLASSIC } from './detection/presets'
+import { DEFAULT_MODEL_ID } from './audio/models'
 
 export type EngineStatus =
   | 'idle'
@@ -36,8 +37,11 @@ export interface SessionState {
 
   targetDurationMs: number | null // null = no auto-stop
 
+  selectedModelId: string
+
   setSpeakerName: (name: string) => void
   setTargetDuration: (ms: number | null) => void
+  setSelectedModel: (id: string) => void
   setStatus: (status: EngineStatus, errorMessage?: string | null) => void
   setSensitivity: (s: Sensitivity) => void
   setPreset: (name: string, list: WordList) => void
@@ -77,9 +81,13 @@ export const useSessionStore = create<SessionState>((set) => ({
 
   targetDurationMs: null,
 
+  selectedModelId: DEFAULT_MODEL_ID,
+
   setSpeakerName: (name) => set({ speakerName: name }),
 
   setTargetDuration: (ms) => set({ targetDurationMs: ms }),
+
+  setSelectedModel: (id) => set({ selectedModelId: id }),
 
   setStatus: (status, errorMessage = null) => set({ status, errorMessage }),
 
