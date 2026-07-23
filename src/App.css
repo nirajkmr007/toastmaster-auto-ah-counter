@@ -114,6 +114,11 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+.name-entry .required {
+  color: var(--stop);
+  margin-left: 2px;
+  font-weight: 600;
+}
 .name-entry input {
   background: var(--bg-elev);
   border: 1px solid var(--border);

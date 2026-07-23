@@ -8,7 +8,9 @@ export function NameEntry() {
 
   return (
     <label className="name-entry">
-      <span className="label">Speaker</span>
+      <span className="label">
+        Speaker <span className="required" aria-hidden="true">*</span>
+      </span>
       <input
         type="text"
         placeholder="Your name"
@@ -17,6 +19,8 @@ export function NameEntry() {
         disabled={disabled}
         maxLength={40}
         autoComplete="off"
+        required
+        aria-required="true"
       />
     </label>
   )
