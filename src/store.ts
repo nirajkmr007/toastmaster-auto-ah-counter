@@ -62,7 +62,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   errorMessage: null,
 
   wordList: TOASTMASTERS_CLASSIC,
-  sensitivity: 'balanced',
+  sensitivity: 'extra-strict',
   presetName: 'Toastmasters Classic',
 
   transcript: [],
@@ -130,7 +130,7 @@ export const useSessionStore = create<SessionState>((set) => ({
       }
       return {
         wordList: focused,
-        sensitivity: 'strict' as const,
+        sensitivity: 'extra-strict' as const,
         presetName: `Practice: ${word}`,
         transcript: [],
         partialText: '',

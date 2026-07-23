@@ -12,7 +12,7 @@
  * create one instance per speaker and feed its `process` with each utterance.
  */
 
-export type Sensitivity = 'strict' | 'balanced' | 'loose'
+export type Sensitivity = 'extra-strict' | 'strict' | 'balanced' | 'loose'
 
 export interface WordList {
   soundFillers: string[]
@@ -53,6 +53,8 @@ export function createDetector(initial: DetectorConfig): Detector {
   const thresholdFor = (isSoundFiller: boolean): number => {
     if (isSoundFiller) return 1
     switch (config.sensitivity) {
+      case 'extra-strict':
+        return 1
       case 'strict':
         return 1
       case 'balanced':
@@ -75,6 +77,10 @@ export function createDetector(initial: DetectorConfig): Detector {
     prev: string | undefined,
     next: string | undefined
   ): boolean => {
+    // Extra-strict: count everything. No position/context filtering.
+    // Loose is the opposite extreme — also no filtering, because loose relies
+    // on the frequency threshold to reject noise instead of rules.
+    if (config.sensitivity === 'extra-strict') return false
     if (config.sensitivity === 'loose') return false
     if (word === 'so') {
       // "So" as a legitimate connector is fine mid-utterance.

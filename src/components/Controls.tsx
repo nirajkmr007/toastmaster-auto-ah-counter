@@ -7,7 +7,20 @@ interface ControlsProps {
   onStop: () => void
 }
 
-const SENSITIVITY_LEVELS: Sensitivity[] = ['strict', 'balanced', 'loose']
+// Ordered most-sensitive → least-sensitive so the label matches expectation.
+const SENSITIVITY_LEVELS: Sensitivity[] = [
+  'extra-strict',
+  'strict',
+  'balanced',
+  'loose',
+]
+
+const SENSITIVITY_LABELS: Record<Sensitivity, string> = {
+  'extra-strict': 'Extra strict',
+  strict: 'Strict',
+  balanced: 'Balanced',
+  loose: 'Loose',
+}
 
 // Common Toastmasters durations. Values are in milliseconds; null = no limit.
 const TIME_LIMIT_OPTIONS: { label: string; ms: number | null }[] = [
@@ -64,7 +77,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
           >
             {SENSITIVITY_LEVELS.map((s) => (
               <option key={s} value={s}>
-                {s[0].toUpperCase() + s.slice(1)}
+                {SENSITIVITY_LABELS[s]}
               </option>
             ))}
           </select>
