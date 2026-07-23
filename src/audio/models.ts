@@ -1,12 +1,14 @@
 /**
  * Model catalog — the source of truth for which STT models the app offers.
  *
- * Add a model by appending an entry below. See README ("Adding a new model")
- * for guidance and self-hosting notes.
+ * Only URLs verified to actually serve a tar.gz should live in the main
+ * MODELS array. ccoreilly's gh-pages mirror hosts the small en-US model
+ * (verified) but the larger en-US and en-IN variants that some earlier
+ * docs describe aren't present there — you'll get a 404 on fetch.
  *
- * All currently-listed URLs point at ccoreilly's vosk-browser gh-pages mirror.
- * If any specific tarball ever 404s, replace the `url` with a self-hosted
- * copy under `public/models/` (see README) or use a HuggingFace mirror.
+ * The reliable way to offer more models is to self-host: drop the .tar.gz
+ * under `public/models/` and reference it via BASE_URL. See README for the
+ * step-by-step ("Adding a new model" → "Self-hosting").
  */
 
 export type EngineType = 'vosk'
@@ -34,25 +36,29 @@ export const MODELS: ModelInfo[] = [
     url: `${CCOREILLY}/vosk-model-small-en-us-0.15.tar.gz`,
     engineType: 'vosk',
   },
-  {
-    id: 'vosk-small-en-in',
-    name: 'Vosk small (en-IN)',
-    language: 'en-IN',
-    approxSizeMB: 40,
-    description: 'Tuned for Indian English pronunciation.',
-    url: `${CCOREILLY}/vosk-model-small-en-in-0.4.tar.gz`,
-    engineType: 'vosk',
-  },
-  {
-    id: 'vosk-en-us-lgraph',
-    name: 'Vosk large (en-US, lgraph)',
-    language: 'en-US',
-    approxSizeMB: 130,
-    description:
-      'More accurate than the small model. Larger first-load download.',
-    url: `${CCOREILLY}/vosk-model-en-us-0.22-lgraph.tar.gz`,
-    engineType: 'vosk',
-  },
+
+  // --- Self-hosted extras (uncomment after dropping the .tar.gz under
+  //     public/models/; convert alphacephei's .zip to .tar.gz first — see
+  //     README). Leaving these commented so a stock clone doesn't 404.
+  //
+  // {
+  //   id: 'vosk-small-en-in',
+  //   name: 'Vosk small (en-IN)',
+  //   language: 'en-IN',
+  //   approxSizeMB: 40,
+  //   description: 'Tuned for Indian English pronunciation.',
+  //   url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-in-0.4.tar.gz`,
+  //   engineType: 'vosk',
+  // },
+  // {
+  //   id: 'vosk-en-us-lgraph',
+  //   name: 'Vosk large (en-US, lgraph)',
+  //   language: 'en-US',
+  //   approxSizeMB: 130,
+  //   description: 'More accurate. Larger first-load download.',
+  //   url: `${import.meta.env.BASE_URL}models/vosk-model-en-us-0.22-lgraph.tar.gz`,
+  //   engineType: 'vosk',
+  // },
 ]
 
 export const DEFAULT_MODEL_ID = 'vosk-small-en-us'

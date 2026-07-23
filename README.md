@@ -52,50 +52,61 @@ npm run dev
 
 ## Choosing a model
 
-The app ships with three built-in Vosk models — pick from the **Model**
-dropdown in the header. Larger models are more accurate but slower to
-download on first use.
+The **Model** dropdown in the header selects which STT model to use. Out of
+the box the catalog ships with one verified model:
 
-| ID                     | Language | Size    | Notes                                            |
-| ---------------------- | -------- | ------- | ------------------------------------------------ |
-| `vosk-small-en-us`     | en-US    | ~40 MB  | Default. Fast, decent accuracy.                  |
-| `vosk-small-en-in`     | en-IN    | ~40 MB  | Tuned for Indian English pronunciation.          |
-| `vosk-en-us-lgraph`    | en-US    | ~130 MB | More accurate. Bigger first-load download.       |
+| ID                 | Language | Size   | Notes                            |
+| ------------------ | -------- | ------ | -------------------------------- |
+| `vosk-small-en-us` | en-US    | ~40 MB | Default. Fast, decent accuracy.  |
+
+The `models.ts` file also has commented-out entries for a larger en-US model
+and an en-IN (Indian English) model — see the next section to enable them.
+They're not on by default because they need to be self-hosted (ccoreilly's
+CDN mirror only reliably serves the small en-US tarball, and Vosk's official
+mirror only publishes `.zip`, which vosk-browser can't read).
 
 Models are downloaded once per browser (HTTP-cached) and stream audio through
 a Web Worker locally — nothing leaves the tab.
 
 ## Adding a new model
 
-The catalog lives in [`src/audio/models.ts`](src/audio/models.ts). To add a
-new Vosk model, append an entry:
+The catalog is [`src/audio/models.ts`](src/audio/models.ts). vosk-browser
+requires a **`.tar.gz`** (not `.zip`) whose root contains the standard Vosk
+Kaldi model directory. Two ways to add one:
 
-```ts
-{
-  id: 'vosk-small-fr',
-  name: 'Vosk small (fr)',
-  language: 'fr',
-  approxSizeMB: 40,
-  description: 'French, small footprint.',
-  url: 'https://example.com/path/to/vosk-model-small-fr-0.22.tar.gz',
-  engineType: 'vosk',
-}
-```
+### 1. Self-host (recommended, most reliable)
 
-The model must be a `.tar.gz` in vosk-browser's expected format (Kaldi
-model directory tar-gzipped at the root). See
-[alphacephei.com/vosk/models](https://alphacephei.com/vosk/models) for
-the canonical model listing.
+1. Download the `.zip` for the model you want from
+   [alphacephei.com/vosk/models](https://alphacephei.com/vosk/models)
+   (e.g. `vosk-model-small-en-in-0.4.zip`).
+2. Repack as tar.gz — the tarball's root should be the model directory:
+   ```bash
+   unzip vosk-model-small-en-in-0.4.zip
+   tar czf vosk-model-small-en-in-0.4.tar.gz vosk-model-small-en-in-0.4
+   ```
+3. Drop the `.tar.gz` into `public/models/` (create the folder if needed).
+4. Uncomment (or add) the matching entry in `MODELS`:
+   ```ts
+   {
+     id: 'vosk-small-en-in',
+     name: 'Vosk small (en-IN)',
+     language: 'en-IN',
+     approxSizeMB: 40,
+     description: 'Tuned for Indian English pronunciation.',
+     url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-in-0.4.tar.gz`,
+     engineType: 'vosk',
+   }
+   ```
 
-**Self-hosting a model.** If you'd rather not depend on a third-party
-mirror (or need offline use), drop the tarball into `public/models/`,
-then point the URL at the deployed asset path:
+Files under `public/` are copied verbatim into `dist/` at build time and
+served alongside the app. Note that models this size push you against the
+GitHub Pages 1 GB repo limit if you add many.
 
-```ts
-url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-us-0.15.tar.gz`
-```
+### 2. External URL
 
-Files under `public/` are copied verbatim into `dist/` at build time.
+If you already have a `.tar.gz` served with CORS enabled somewhere (your own
+CDN, a HuggingFace repo that hosts tarballs, etc.), just point `url:` at it.
+The app will fetch on first Start.
 
 ## Adding a new STT engine (pluggable architecture)
 

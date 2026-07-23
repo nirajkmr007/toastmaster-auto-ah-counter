@@ -23,7 +23,18 @@ export function createVoskEngine(modelUrl: string): SttEngine {
   const loadModel = async (): Promise<void> => {
     if (model) return
     if (!modelLoadPromise) modelLoadPromise = createModel(modelUrl)
-    model = await modelLoadPromise
+    try {
+      model = await modelLoadPromise
+    } catch (err) {
+      // Reset so a retry with a different model URL can succeed instead of
+      // replaying this failure forever.
+      modelLoadPromise = null
+      const msg = err instanceof Error ? err.message : String(err)
+      throw new Error(
+        `Couldn't load model from ${modelUrl} (${msg}). Check the URL in ` +
+          `src/audio/models.ts, or self-host the .tar.gz under public/models/.`
+      )
+    }
   }
 
   const start = async (handlers: SttHandlers): Promise<void> => {
