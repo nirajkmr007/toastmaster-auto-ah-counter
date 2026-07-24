@@ -52,16 +52,43 @@ npm run dev
 
 ## Choosing a model
 
-The **Model** dropdown in the header selects which STT model to use. Two
-engines ship out of the box:
+The **Model** dropdown in the header selects which STT model to use:
 
-| ID                 | Engine             | Size    | Fillers  | Notes                                                     |
-| ------------------ | ------------------ | ------- | -------- | --------------------------------------------------------- |
-| `vosk-small-en-us` | Vosk (streaming)   | ~40 MB  | Decent   | Default. Fast, word-by-word, works everywhere.            |
-| `crisperwhisper`   | transformers.js    | ~500 MB | Best     | Verbatim disfluency accuracy. Large download, ~6 s chunks. |
+| ID                  | Engine           | Size    | Notes                                                        |
+| ------------------- | ---------------- | ------- | ------------------------------------------------------------ |
+| `vosk-small-en-us`  | Vosk (streaming) | ~40 MB  | Default. Fast, word-by-word, works everywhere. CDN-hosted.   |
+| `vosk-en-us-lgraph` | Vosk (streaming) | ~128 MB | More accurate English, still word-by-word. Self-hosted.      |
+| `vosk-small-en-in`  | Vosk (streaming) | ~36 MB  | Indian English. Word-by-word. Self-hosted.                   |
+| `crisperwhisper`    | transformers.js  | ~500 MB | Best filler accuracy, but ~6 s batches, not live. Heavy.     |
 
 Everything runs locally — models are fetched once (browser-cached) and audio
 never leaves the tab.
+
+### Why not the 1–2 GB Vosk models?
+
+alphacephei publishes flagship models like `vosk-model-en-us-0.22` (1.8 GB)
+and `vosk-model-en-in-0.5` (1 GB, Indian English). **They can't run in a
+browser** — vosk-browser executes Vosk in WebAssembly, which is limited to
+roughly 2 GB of memory, and these models need several GB at runtime. Loading
+one crashes the tab. `en-us-0.22-lgraph` (128 MB) is a compressed-graph build
+of the flagship model and is the largest that reliably runs client-side —
+that's why it's the "bigger English" option here. Running the full-size
+models would require the server-side architecture we deliberately avoided.
+
+### Self-hosted models (lgraph + Indian English)
+
+The two Vosk upgrades are self-hosted because vosk-browser needs `.tar.gz`
+while alphacephei ships `.zip`. A script handles the conversion:
+
+```bash
+./scripts/fetch-models.sh
+```
+
+It downloads each `.zip`, repacks it to `.tar.gz`, and drops it in
+`public/models/`. `setup.sh` runs it for you on first setup, and the GitHub
+Pages workflow runs it at deploy time — so the models ship in the deployed
+site without bloating the git repo (the tarballs are git-ignored). Requires
+`curl`, `unzip`, and `tar` on PATH.
 
 **CrisperWhisper caveats (it's the accurate-but-heavy option):**
 

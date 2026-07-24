@@ -37,6 +37,29 @@ export const MODELS: ModelInfo[] = [
     engineType: 'vosk',
   },
   {
+    id: 'vosk-en-us-lgraph',
+    name: 'Vosk large (en-US, lgraph)',
+    language: 'en-US',
+    approxSizeMB: 128,
+    description:
+      'More accurate than the small model, still streams word-by-word. ' +
+      'Larger first-load download; best on desktop. Self-hosted — run ' +
+      'scripts/fetch-models.sh.',
+    url: `${import.meta.env.BASE_URL}models/vosk-model-en-us-0.22-lgraph.tar.gz`,
+    engineType: 'vosk',
+  },
+  {
+    id: 'vosk-small-en-in',
+    name: 'Vosk small (en-IN, Indian English)',
+    language: 'en-IN',
+    approxSizeMB: 36,
+    description:
+      'Tuned for Indian English pronunciation. Streams word-by-word. ' +
+      'Self-hosted — run scripts/fetch-models.sh.',
+    url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-in-0.4.tar.gz`,
+    engineType: 'vosk',
+  },
+  {
     id: 'crisperwhisper',
     name: 'CrisperWhisper (verbatim, large)',
     language: 'en',
@@ -50,29 +73,6 @@ export const MODELS: ModelInfo[] = [
     url: 'onnx-community/CrisperWhisper-ONNX',
     engineType: 'transformers-whisper',
   },
-
-  // --- Self-hosted extras (uncomment after dropping the .tar.gz under
-  //     public/models/; convert alphacephei's .zip to .tar.gz first — see
-  //     README). Leaving these commented so a stock clone doesn't 404.
-  //
-  // {
-  //   id: 'vosk-small-en-in',
-  //   name: 'Vosk small (en-IN)',
-  //   language: 'en-IN',
-  //   approxSizeMB: 40,
-  //   description: 'Tuned for Indian English pronunciation.',
-  //   url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-in-0.4.tar.gz`,
-  //   engineType: 'vosk',
-  // },
-  // {
-  //   id: 'vosk-en-us-lgraph',
-  //   name: 'Vosk large (en-US, lgraph)',
-  //   language: 'en-US',
-  //   approxSizeMB: 130,
-  //   description: 'More accurate. Larger first-load download.',
-  //   url: `${import.meta.env.BASE_URL}models/vosk-model-en-us-0.22-lgraph.tar.gz`,
-  //   engineType: 'vosk',
-  // },
 ]
 
 export const DEFAULT_MODEL_ID = 'vosk-small-en-us'

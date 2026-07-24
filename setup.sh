@@ -94,5 +94,15 @@ log "Installing project dependencies (npm install)…"
 cd "$SCRIPT_DIR"
 npm install --no-audit --no-fund
 
+# Fetch the larger self-hosted Vosk models (en-US lgraph + Indian English).
+# Non-fatal: the default small en-US model streams from a CDN, so the app
+# still runs without these — they just won't appear in the Model dropdown.
+if command -v unzip >/dev/null 2>&1; then
+  log "Fetching larger STT models (optional)…"
+  ./scripts/fetch-models.sh || warn "Model fetch failed — the default model still works; re-run ./scripts/fetch-models.sh later."
+else
+  warn "Skipping larger STT models: 'unzip' not found. Install it, then run ./scripts/fetch-models.sh."
+fi
+
 log "Done. Start the dev server with:"
 printf "  npm run dev\n"

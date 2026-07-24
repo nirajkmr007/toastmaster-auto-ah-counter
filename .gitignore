@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Vosk model tarballs — build artifacts fetched by scripts/fetch-models.sh
+public/models/*.tar.gz
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
