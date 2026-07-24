@@ -16,8 +16,6 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "vosk-browser": "^0.0.8",
-    "y-webrtc": "^10.3.0",
-    "yjs": "^13.6.31",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

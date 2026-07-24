@@ -3,13 +3,16 @@
  *
  * Given an utterance (final Vosk result), returns a list of detections that
  * should be counted. Applies:
- *   - always-count sound fillers ("um", "uh", ...)
+ *   - always-count sound fillers ("um", "uh", ...), canonicalized to one label
  *   - configurable crutch words / phrases
- *   - position rules ("so" only at utterance start; "like" not before to/a/an/number)
- *   - rolling frequency threshold (strict=1, balanced=3, loose=5 within 30 s)
+ *   - position rules ("so" only at utterance start; "like" not as a
+ *     verb/simile/infinitive) — skipped in extra-strict and loose modes
+ *   - rolling frequency threshold within `frequencyWindowMs`
+ *     (extra-strict=1, strict=1, balanced=3, loose=5)
  *
- * The detector is stateful (it holds a rolling candidate log per word), so
- * create one instance per speaker and feed its `process` with each utterance.
+ * The detector is stateful (it holds a rolling candidate log per word). The
+ * app uses a single instance and calls `reset()` when the active speaker
+ * changes, so one speaker's repeats don't prime another's threshold.
  */
 
 export type Sensitivity = 'extra-strict' | 'strict' | 'balanced' | 'loose'

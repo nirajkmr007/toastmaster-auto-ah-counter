@@ -9,12 +9,15 @@ before investing more in UI or multi-tab work.
 
 1. Quiet room, one microphone, Chrome or Edge.
 2. `npm run dev` → open `http://localhost:5173`.
-3. Enter any name. Preset **Toastmasters Classic**. Sensitivity **Balanced**.
+3. Add one speaker (any name). Preset **Toastmasters Classic**. Set
+   Sensitivity to **Balanced** — this test measures the rule layer, so switch
+   off the **Extra strict** default.
 4. Click **Start listening**, wait for the button to turn red (Stop).
 5. Read the four sections below back-to-back at conversational pace (~140 wpm).
    Pause 3–5 seconds between sections so Vosk closes each utterance.
-6. Click **Stop**, then **Copy session log** in the footer. Paste the JSON
-   into the scoring table at the bottom.
+6. Click **Stop**, then **Copy session log** in the footer. The JSON is keyed
+   by speaker (`speakers[0].detections`); use that speaker's detections for
+   scoring below.
 
 ## The script
 
@@ -75,7 +78,8 @@ Expect ~0 detections._
 
 ## Scoring
 
-For each detection in your **session log JSON**:
+For each detection in the speaker's log (`speakers[0].detections` in the
+session-log JSON):
 
 - **TP** (true positive) — you actually said this word AS a filler at that point.
 - **FP** (false positive) — you said the word, but as a legitimate part of speech.
@@ -108,8 +112,8 @@ rules for `so` and `like` are the first place to look — see
 
 ### Ship gate
 
-- **Overall precision ≥ 70 %** in Balanced mode → close AH-5, continue with
-  multi-speaker sync (Yjs) and animation polish.
+- **Overall precision ≥ 70 %** in Balanced mode → the rule layer is good
+  enough; keep Balanced as a viable option alongside the Extra-strict default.
 - **Overall precision < 70 %** → open a new issue to spike an LLM-based
   classifier for ambiguous crutch words (called out in the README roadmap).
 

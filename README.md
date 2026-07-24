@@ -11,30 +11,39 @@ Chrome or Edge, allow microphone access when prompted. First load fetches the
 
 ## Design at a glance
 
-- **Client-only.** No backend. Every tab does its own audio capture, STT, and
-  filler detection. Session state lives in memory and dies when the last tab
-  closes.
-- **One tab per speaker.** Each participant opens the app on their own device
-  and joins a shared room by code. Tabs sync speaker list and counters via a
-  Yjs CRDT over WebRTC.
-- **STT: Vosk-Browser in a Web Worker.** ~200 ms streaming, keeps disfluencies
-  (Whisper drops them, which is why it's not used here).
+- **Client-only.** No backend. One tab does audio capture, STT, and filler
+  detection locally. Session state lives in memory and dies when the tab
+  closes — nothing is stored or uploaded.
+- **One mic, a roster of speakers.** The operator (the ah-counter) runs a
+  single tab and taps who's speaking now as the meeting moves. Each speaker
+  accumulates their own counts, transcript, and speaking time; the end-of-
+  session report has a section per speaker. (A multi-device sync mode is
+  parked — see roadmap.)
+- **Pluggable STT.** Everything above the recognizer talks to a single
+  `SttEngine` interface. Default is Vosk-Browser in a Web Worker (~200 ms
+  streaming, keeps disfluencies — Whisper drops them). CrisperWhisper is
+  available as a heavier, more accurate second engine (see "Choosing a
+  model").
 - **Filler detection.** Configurable word lists (sound fillers + crutch
-  phrases) with a rule layer for context-sensitive words (`so` at sentence
-  start, `like` unless followed by `to`/`a`/a number, frequency thresholds).
-  Per-word sensitivity: Strict / Balanced / Loose.
-- **UI.** Left pane: animated filler bubbles per speaker with counters.
-  Right pane: streaming transcript.
+  phrases), with sound-filler variants canonicalized to one label, a rule
+  layer for context-sensitive words (`so` at utterance start, `like` unless a
+  verb/simile/infinitive), and a rolling frequency threshold. Per-word
+  sensitivity: Extra strict / Strict / Balanced / Loose. The operator can also
+  add missed fillers manually.
+- **UI.** Left pane: animated filler bubbles for the active speaker + manual-
+  add buttons. Right pane: streaming transcript. Both panes scroll
+  independently. A per-speaker speech timer shows a green/yellow/red signal.
 - **Noise cancellation.** Browser-native `noiseSuppression` + `echoCancellation`
   via `getUserMedia`. RNNoise-WASM only if we hear complaints.
 
 ## Stack
 
 - Vite + React 19 + TypeScript
-- Zustand — local state
-- Framer Motion — bubble animations
-- Yjs + y-webrtc — multi-tab session sync (no backend)
-- vosk-browser — streaming STT with disfluencies preserved
+- Zustand — local state (speaker roster + session)
+- Framer Motion — bubble / report animations
+- vosk-browser — default streaming STT with disfluencies preserved
+- @huggingface/transformers — optional CrisperWhisper engine (Web Worker)
+- html-to-image — PNG export of the session report
 
 ## Getting started
 
@@ -194,27 +203,32 @@ Notes:
 - The subpath is hard-coded in `vite.config.ts` (`base: '/toastmaster-auto-ah-counter/'`
   for `build`; dev stays at `/`). If you rename the repo, update it there.
 - HTTPS is automatic — required, because `getUserMedia` won't work over HTTP.
-- The Vosk model (~40 MB) is still fetched from `ccoreilly.github.io` on first
-  Start. If that origin ever goes down, drop the `.tar.gz` into
-  `public/models/` and set `VITE_VOSK_MODEL_URL` in `.env`.
+- The default Vosk model (~40 MB) is fetched from `ccoreilly.github.io` on
+  first Start. If that origin ever goes down, self-host it: add the `.tar.gz`
+  under `public/models/` (see `scripts/fetch-models.sh`) and point the model's
+  `url` in `src/audio/models.ts` at `${import.meta.env.BASE_URL}models/...`.
 
 ## Roadmap
 
-**v1 scope**
-- Room code join, per-speaker name entry
-- Vosk streaming STT + filler detection module with position/frequency rules
-- Configurable word lists (Toastmasters Classic, Corporate Speak presets)
-- Sensitivity toggle per crutch word
-- Animated per-speaker counter bubbles + streaming transcript
-
-**Riskiest assumption to validate first:** that the position/context rules for
-crutch words hit ≥70 % precision on real speech under "Balanced." Prototype
-the detection module in isolation (mic → Vosk → rules → console.log)
-before investing in UI polish. Tracked in Linear.
+**Built**
+- One-mic multi-speaker sessions: add a roster, tap the active speaker, per-
+  speaker counts / transcript / speaking time.
+- Vosk streaming STT + rule-based filler detection (position + frequency
+  rules), with sound-filler variants canonicalized to one label.
+- Configurable word lists (Toastmasters Classic, Corporate Speak) and
+  sensitivity: Extra strict / Strict / Balanced / Loose.
+- Manual filler add (operator override for anything the model misses).
+- Per-speaker speech timer with green/yellow/red signal.
+- Animated per-speaker filler bubbles + independent-scroll streaming
+  transcript.
+- Consolidated end-of-session report (overview + per-speaker sections) with
+  PNG export.
+- Pluggable STT: optional CrisperWhisper engine via transformers.js; larger
+  Vosk models (en-US lgraph, Indian English) via `scripts/fetch-models.sh`.
 
 **Parked**
-- Distil-Whisper second pass for prettier transcripts
-- RNNoise-WASM
-- Self-hosted WebRTC signaling
-- LLM-based crutch classifier
-- Post-session speech metrics / export
+- Multi-device mode: each speaker on their own device, synced via Yjs/WebRTC
+  (would need a signaling server — trades away the zero-backend property).
+- RNNoise-WASM for stronger noise cancellation.
+- LLM-based crutch classifier for higher crutch-word precision.
+- Distil-Whisper second pass for prettier transcripts.

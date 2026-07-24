@@ -114,11 +114,7 @@ function buildSummary(
 ): string {
   if (total === 0) return `${name} — no fillers detected. Clean run.`
   const parts: string[] = []
-  if (topCrutch) {
-    parts.push(
-      `Most-used: \`${topCrutch}\` (${topCount}×).`
-    )
-  }
+  if (topCrutch) parts.push(`Most-used: ${topCrutch} (${topCount}×).`)
   if (fillersPerMin >= 1) parts.push(`${fillersPerMin}/min.`)
   return parts.join(' ')
 }
