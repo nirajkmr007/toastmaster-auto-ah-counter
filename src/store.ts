@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Detection, Sensitivity, WordList } from './detection/detector'
+import { canonicalFiller } from './detection/detector'
 import { TOASTMASTERS_CLASSIC } from './detection/presets'
 import { DEFAULT_MODEL_ID } from './audio/models'
 
@@ -16,8 +17,21 @@ export interface TranscriptLine {
   timestamp: number
 }
 
+// One bucket per speaker in the meeting. All live data (counts, transcript,
+// detections, speaking time) is per-speaker; the flat single-speaker model is
+// just a roster of one.
+export interface Speaker {
+  id: string
+  name: string
+  counts: Record<string, number>
+  detectionLog: Detection[]
+  transcript: TranscriptLine[]
+  partialText: string
+  speakingMs: number // accumulated active listening time
+  activeSince: number | null // set while this speaker is the active one AND listening
+}
+
 export interface SessionState {
-  speakerName: string
   status: EngineStatus
   errorMessage: string | null
 
@@ -25,45 +39,65 @@ export interface SessionState {
   sensitivity: Sensitivity
   presetName: string
 
-  transcript: TranscriptLine[]
-  partialText: string
-
-  counts: Record<string, number>
-  detectionLog: Detection[] // full log for the session (used for animation trigger + scoring)
+  speakers: Speaker[]
+  activeSpeakerId: string | null
 
   sessionStartAt: number | null
   sessionEndAt: number | null
   showReport: boolean
 
-  targetDurationMs: number | null // null = no auto-stop
+  targetDurationMs: number | null // per-speech time guide (green/yellow/red)
 
   selectedModelId: string
   loadingMessage: string | null
 
-  setSpeakerName: (name: string) => void
-  setTargetDuration: (ms: number | null) => void
-  setSelectedModel: (id: string) => void
-  setLoadingMessage: (msg: string | null) => void
+  // config
   setStatus: (status: EngineStatus, errorMessage?: string | null) => void
   setSensitivity: (s: Sensitivity) => void
   setPreset: (name: string, list: WordList) => void
+  setTargetDuration: (ms: number | null) => void
+  setSelectedModel: (id: string) => void
+  setLoadingMessage: (msg: string | null) => void
 
+  // roster
+  addSpeaker: (name: string) => void
+  removeSpeaker: (id: string) => void
+  setActiveSpeaker: (id: string) => void
+
+  // active-speaker data
   addTranscriptLine: (text: string) => void
   setPartial: (text: string) => void
-
   applyDetections: (detections: Detection[]) => void
+  addManualDetection: (word: string) => void
 
+  // session lifecycle
   markSessionStart: () => void
   markSessionEnd: () => void
   openReport: () => void
   closeReport: () => void
-  startPracticeMode: (word: string) => void
+  resetSessionData: () => void
+}
 
-  resetSession: () => void
+function newSpeaker(name: string): Speaker {
+  return {
+    id: crypto.randomUUID(),
+    name,
+    counts: {},
+    detectionLog: [],
+    transcript: [],
+    partialText: '',
+    speakingMs: 0,
+    activeSince: null,
+  }
+}
+
+// Fold a speaker's open active interval into their accumulated speakingMs.
+function flushSpeaking(sp: Speaker, now: number): Speaker {
+  if (sp.activeSince == null) return sp
+  return { ...sp, speakingMs: sp.speakingMs + (now - sp.activeSince), activeSince: null }
 }
 
 export const useSessionStore = create<SessionState>((set) => ({
-  speakerName: '',
   status: 'idle',
   errorMessage: null,
 
@@ -71,11 +105,8 @@ export const useSessionStore = create<SessionState>((set) => ({
   sensitivity: 'extra-strict',
   presetName: 'Toastmasters Classic',
 
-  transcript: [],
-  partialText: '',
-
-  counts: {},
-  detectionLog: [],
+  speakers: [],
+  activeSpeakerId: null,
 
   sessionStartAt: null,
   sessionEndAt: null,
@@ -86,89 +117,160 @@ export const useSessionStore = create<SessionState>((set) => ({
   selectedModelId: DEFAULT_MODEL_ID,
   loadingMessage: null,
 
-  setSpeakerName: (name) => set({ speakerName: name }),
-
+  setStatus: (status, errorMessage = null) => set({ status, errorMessage }),
+  setSensitivity: (sensitivity) => set({ sensitivity }),
+  setPreset: (presetName, wordList) => set({ presetName, wordList }),
   setTargetDuration: (ms) => set({ targetDurationMs: ms }),
-
   setSelectedModel: (id) => set({ selectedModelId: id }),
-
   setLoadingMessage: (loadingMessage) => set({ loadingMessage }),
 
-  setStatus: (status, errorMessage = null) => set({ status, errorMessage }),
+  addSpeaker: (name) =>
+    set((state) => {
+      const trimmed = name.trim()
+      if (!trimmed) return {}
+      const sp = newSpeaker(trimmed)
+      const isFirst = state.speakers.length === 0
+      // If we add the very first speaker mid-listening, start their clock.
+      if (isFirst && state.status === 'listening') sp.activeSince = Date.now()
+      return {
+        speakers: [...state.speakers, sp],
+        activeSpeakerId: isFirst ? sp.id : state.activeSpeakerId,
+      }
+    }),
 
-  setSensitivity: (sensitivity) => set({ sensitivity }),
+  removeSpeaker: (id) =>
+    set((state) => {
+      const speakers = state.speakers.filter((s) => s.id !== id)
+      let activeSpeakerId = state.activeSpeakerId
+      if (activeSpeakerId === id) {
+        activeSpeakerId = speakers[0]?.id ?? null
+      }
+      return { speakers, activeSpeakerId }
+    }),
 
-  setPreset: (presetName, wordList) => set({ presetName, wordList }),
+  setActiveSpeaker: (id) =>
+    set((state) => {
+      if (id === state.activeSpeakerId) return {}
+      const now = Date.now()
+      const listening = state.status === 'listening'
+      const speakers = state.speakers.map((sp) => {
+        if (sp.id === state.activeSpeakerId) return flushSpeaking(sp, now)
+        if (sp.id === id) return { ...sp, activeSince: listening ? now : null }
+        return sp
+      })
+      return { speakers, activeSpeakerId: id }
+    }),
 
   addTranscriptLine: (text) =>
-    set((state) => ({
-      transcript: [
-        ...state.transcript,
-        { id: crypto.randomUUID(), text, timestamp: Date.now() },
-      ],
-      partialText: '',
-    })),
+    set((state) => {
+      if (!state.activeSpeakerId) return {}
+      return {
+        speakers: state.speakers.map((sp) =>
+          sp.id === state.activeSpeakerId
+            ? {
+                ...sp,
+                transcript: [
+                  ...sp.transcript,
+                  { id: crypto.randomUUID(), text, timestamp: Date.now() },
+                ],
+                partialText: '',
+              }
+            : sp
+        ),
+      }
+    }),
 
-  setPartial: (partialText) => set({ partialText }),
+  setPartial: (partialText) =>
+    set((state) => {
+      if (!state.activeSpeakerId) return {}
+      return {
+        speakers: state.speakers.map((sp) =>
+          sp.id === state.activeSpeakerId ? { ...sp, partialText } : sp
+        ),
+      }
+    }),
 
   applyDetections: (detections) =>
     set((state) => {
-      if (detections.length === 0) return {}
-      const nextCounts = { ...state.counts }
-      for (const d of detections) {
-        nextCounts[d.word] = (nextCounts[d.word] ?? 0) + 1
+      if (detections.length === 0 || !state.activeSpeakerId) return {}
+      return {
+        speakers: state.speakers.map((sp) => {
+          if (sp.id !== state.activeSpeakerId) return sp
+          const counts = { ...sp.counts }
+          for (const d of detections) counts[d.word] = (counts[d.word] ?? 0) + 1
+          return { ...sp, counts, detectionLog: [...sp.detectionLog, ...detections] }
+        }),
+      }
+    }),
+
+  addManualDetection: (word) =>
+    set((state) => {
+      if (!state.activeSpeakerId) return {}
+      const canonical = canonicalFiller(word)
+      const det: Detection = {
+        id: crypto.randomUUID(),
+        word: canonical,
+        timestamp: Date.now(),
+        context: '(added manually)',
+        manual: true,
       }
       return {
-        counts: nextCounts,
-        detectionLog: [...state.detectionLog, ...detections],
+        speakers: state.speakers.map((sp) => {
+          if (sp.id !== state.activeSpeakerId) return sp
+          const counts = { ...sp.counts }
+          counts[canonical] = (counts[canonical] ?? 0) + 1
+          return { ...sp, counts, detectionLog: [...sp.detectionLog, det] }
+        }),
       }
     }),
 
   markSessionStart: () =>
-    set({ sessionStartAt: Date.now(), sessionEndAt: null }),
-
-  markSessionEnd: () => set({ sessionEndAt: Date.now() }),
-
-  openReport: () => set({ showReport: true }),
-
-  closeReport: () => set({ showReport: false }),
-
-  startPracticeMode: (word) =>
     set((state) => {
-      const isPhrase = word.includes(' ')
-      const focused: WordList = {
-        soundFillers: [],
-        crutchWords: isPhrase ? [] : [word],
-        crutchPhrases: isPhrase ? [word] : [],
-      }
+      const now = Date.now()
       return {
-        wordList: focused,
-        sensitivity: 'extra-strict' as const,
-        presetName: `Practice: ${word}`,
-        transcript: [],
-        partialText: '',
-        counts: {},
-        detectionLog: [],
-        sessionStartAt: null,
+        sessionStartAt: now,
         sessionEndAt: null,
-        showReport: false,
-        status: 'ready' as const,
-        errorMessage: null,
-        // keep speakerName so they don't have to retype it
-        speakerName: state.speakerName,
+        speakers: state.speakers.map((sp) =>
+          sp.id === state.activeSpeakerId ? { ...sp, activeSince: now } : sp
+        ),
       }
     }),
 
-  resetSession: () =>
-    set({
-      transcript: [],
-      partialText: '',
-      counts: {},
-      detectionLog: [],
+  markSessionEnd: () =>
+    set((state) => {
+      const now = Date.now()
+      return {
+        sessionEndAt: now,
+        speakers: state.speakers.map((sp) =>
+          sp.id === state.activeSpeakerId ? flushSpeaking(sp, now) : sp
+        ),
+      }
+    }),
+
+  openReport: () => set({ showReport: true }),
+  closeReport: () => set({ showReport: false }),
+
+  // Clear every speaker's live data but keep the roster (names) so a new
+  // session can reuse the same lineup.
+  resetSessionData: () =>
+    set((state) => ({
+      speakers: state.speakers.map((sp) => ({
+        ...sp,
+        counts: {},
+        detectionLog: [],
+        transcript: [],
+        partialText: '',
+        speakingMs: 0,
+        activeSince: null,
+      })),
       sessionStartAt: null,
       sessionEndAt: null,
       showReport: false,
-      status: 'idle',
       errorMessage: null,
-    }),
+    })),
 }))
+
+// Convenience selector: the currently-active speaker object (or null).
+export function selectActiveSpeaker(state: SessionState): Speaker | null {
+  return state.speakers.find((s) => s.id === state.activeSpeakerId) ?? null
+}

@@ -1,16 +1,15 @@
 import { useEffect, useRef } from 'react'
-import { useSessionStore } from '../store'
+import { useSessionStore, selectActiveSpeaker } from '../store'
 
 export function TranscriptPane() {
-  const transcript = useSessionStore((s) => s.transcript)
-  const partialText = useSessionStore((s) => s.partialText)
-  const speakerName = useSessionStore((s) => s.speakerName)
+  const active = useSessionStore(selectActiveSpeaker)
+  const transcript = active?.transcript ?? []
+  const partialText = active?.partialText ?? ''
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
 
   // Auto-scroll to bottom on new content — but only if the user is already
-  // near the bottom. If they've scrolled up to re-read something, don't yank
-  // them back down.
+  // near the bottom. If they've scrolled up to re-read, don't yank them down.
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -22,11 +21,13 @@ export function TranscriptPane() {
     <div className="pane transcript-pane">
       <div className="pane-header">
         <h2>Transcript</h2>
-        {speakerName ? <span className="speaker-tag">{speakerName}</span> : null}
+        {active ? <span className="speaker-tag">{active.name}</span> : null}
       </div>
 
       <div className="transcript-scroll" ref={scrollRef}>
-        {transcript.length === 0 && !partialText ? (
+        {!active ? (
+          <p className="empty-state dim">Add a speaker to begin.</p>
+        ) : transcript.length === 0 && !partialText ? (
           <p className="empty-state dim">Transcript will appear here as you speak.</p>
         ) : (
           <>

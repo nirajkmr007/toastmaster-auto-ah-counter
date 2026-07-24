@@ -39,7 +39,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   const setSensitivity = useSessionStore((s) => s.setSensitivity)
   const presetName = useSessionStore((s) => s.presetName)
   const setPreset = useSessionStore((s) => s.setPreset)
-  const speakerName = useSessionStore((s) => s.speakerName)
+  const speakerCount = useSessionStore((s) => s.speakers.length)
   const errorMessage = useSessionStore((s) => s.errorMessage)
   const loadingMessage = useSessionStore((s) => s.loadingMessage)
   const targetDurationMs = useSessionStore((s) => s.targetDurationMs)
@@ -50,7 +50,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   const canStart = status === 'idle' || status === 'ready'
   const isBusy = status === 'loading-model'
   const isRunning = status === 'listening'
-  const canPressStart = canStart && speakerName.trim().length > 0
+  const canPressStart = canStart && speakerCount > 0
 
   return (
     <div className="controls">
@@ -105,7 +105,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
         </div>
 
         <div className="select-group">
-          <label htmlFor="time-limit">Time limit</label>
+          <label htmlFor="time-limit">Speech length</label>
           <select
             id="time-limit"
             value={targetDurationMs === null ? 'none' : String(targetDurationMs)}
@@ -115,7 +115,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
               )
             }
             disabled={isRunning || isBusy}
-            title="Auto-stop recording when this duration is reached"
+            title="Per-speech time guide — drives the green/yellow/red signal"
           >
             {TIME_LIMIT_OPTIONS.map((opt) => (
               <option

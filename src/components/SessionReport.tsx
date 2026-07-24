@@ -2,10 +2,9 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
 import { useSessionStore } from '../store'
-import { computeReport } from '../analytics'
+import { computeOverview, computeSpeakerReport } from '../analytics'
+import type { SpeakerReport } from '../analytics'
 
-// Same deterministic hue as BubblesPane so the report visually ties back
-// to what the user just saw during the session.
 function hueFor(word: string): number {
   let hash = 0
   for (let i = 0; i < word.length; i++) hash = (hash * 31 + word.charCodeAt(i)) | 0
@@ -20,25 +19,18 @@ function formatDuration(sec: number): string {
 
 export function SessionReport() {
   const showReport = useSessionStore((s) => s.showReport)
-  const transcript = useSessionStore((s) => s.transcript)
-  const detections = useSessionStore((s) => s.detectionLog)
-  const counts = useSessionStore((s) => s.counts)
+  const speakers = useSessionStore((s) => s.speakers)
   const sessionStartAt = useSessionStore((s) => s.sessionStartAt)
   const sessionEndAt = useSessionStore((s) => s.sessionEndAt)
-  const speakerName = useSessionStore((s) => s.speakerName)
   const closeReport = useSessionStore((s) => s.closeReport)
-  const startPracticeMode = useSessionStore((s) => s.startPracticeMode)
 
-  const report = useMemo(
-    () =>
-      computeReport({
-        transcript,
-        detections,
-        counts,
-        sessionStartAt,
-        sessionEndAt,
-      }),
-    [transcript, detections, counts, sessionStartAt, sessionEndAt]
+  const overview = useMemo(
+    () => computeOverview(speakers, sessionStartAt, sessionEndAt),
+    [speakers, sessionStartAt, sessionEndAt]
+  )
+  const speakerReports = useMemo(
+    () => speakers.map(computeSpeakerReport),
+    [speakers]
   )
 
   const cardRef = useRef<HTMLDivElement | null>(null)
@@ -58,7 +50,7 @@ export function SessionReport() {
       })
       const link = document.createElement('a')
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
-      link.download = `ah-counter-${speakerName || 'speaker'}-${stamp}.png`
+      link.download = `ah-counter-session-${stamp}.png`
       link.href = dataUrl
       link.click()
       setExportState('idle')
@@ -68,11 +60,6 @@ export function SessionReport() {
       setExportState('error')
       setTimeout(() => setExportState('idle'), 2000)
     }
-  }
-
-  const handlePracticeTop = () => {
-    if (!report.topCrutch) return
-    startPracticeMode(report.topCrutch)
   }
 
   return (
@@ -98,7 +85,10 @@ export function SessionReport() {
               <div>
                 <div className="report-eyebrow">Session report</div>
                 <h2 className="report-title">
-                  {speakerName ? `${speakerName}'s session` : 'This session'}
+                  {overview.speakerCount} speaker
+                  {overview.speakerCount === 1 ? '' : 's'} ·{' '}
+                  {overview.totalFillers} filler
+                  {overview.totalFillers === 1 ? '' : 's'}
                 </h2>
               </div>
               <button
@@ -111,74 +101,30 @@ export function SessionReport() {
               </button>
             </div>
 
-            <div className="report-headline">
-              <div className="report-headline-num">{report.totalFillers}</div>
-              <div className="report-headline-label">
-                filler{report.totalFillers === 1 ? '' : 's'} in{' '}
-                {formatDuration(report.durationSec)}
-              </div>
-            </div>
-
+            {/* Overview strip */}
             <div className="report-metrics">
-              <Metric label="Fillers / min" value={report.fillersPerMin.toString()} />
-              <Metric label="Words / min" value={report.wordsPerMin.toString()} />
+              <Metric label="Speakers" value={String(overview.speakerCount)} />
+              <Metric label="Total fillers" value={String(overview.totalFillers)} />
+              <Metric label="Meeting" value={formatDuration(overview.sessionSec)} />
               <Metric
-                label="Longest clean streak"
-                value={
-                  report.longestCleanStreakWords > 0
-                    ? `${report.longestCleanStreakWords} words`
-                    : '—'
-                }
-              />
-              <Metric
-                label="Filler rate"
-                value={
-                  report.fillerRate > 0
-                    ? `${(report.fillerRate * 100).toFixed(1)}%`
-                    : '—'
-                }
+                label="Cleanest"
+                value={overview.cleanestName ?? '—'}
               />
             </div>
 
-            {report.summary ? (
-              <p className="report-summary">{report.summary}</p>
+            {overview.mostName ? (
+              <p className="report-summary">
+                Most fillers this session: <strong>{overview.mostName}</strong>.
+                Cleanest floor: <strong>{overview.cleanestName ?? '—'}</strong>.
+              </p>
             ) : null}
 
-            {report.perWord.length > 0 ? (
-              <div className="report-words">
-                <div className="report-section-label">By word</div>
-                <ul className="report-word-list">
-                  {report.perWord.map((w) => {
-                    const hue = hueFor(w.word)
-                    return (
-                      <li key={w.word} className="report-word-row">
-                        <span
-                          className="report-word-pill"
-                          style={{
-                            color: `hsl(${hue} 90% 78%)`,
-                            borderColor: `hsl(${hue} 80% 60% / 0.5)`,
-                          }}
-                        >
-                          {w.word}
-                        </span>
-                        <span className="report-word-bar-wrap">
-                          <span
-                            className="report-word-bar"
-                            style={{
-                              width: `${
-                                (w.count / report.perWord[0].count) * 100
-                              }%`,
-                              background: `hsl(${hue} 70% 45% / 0.85)`,
-                            }}
-                          />
-                        </span>
-                        <span className="report-word-count">{w.count}</span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            ) : null}
+            {/* Per-speaker sections */}
+            <div className="report-speakers">
+              {speakerReports.map((r) => (
+                <SpeakerSection key={r.id} report={r} />
+              ))}
+            </div>
 
             <div className="report-actions">
               <button
@@ -193,15 +139,6 @@ export function SessionReport() {
                     ? 'Export failed'
                     : 'Save as PNG'}
               </button>
-              {report.topCrutch ? (
-                <button
-                  type="button"
-                  className="btn btn-start"
-                  onClick={handlePracticeTop}
-                >
-                  Practice `{report.topCrutch}`
-                </button>
-              ) : null}
             </div>
 
             <div className="report-footer">
@@ -211,6 +148,59 @@ export function SessionReport() {
         </motion.div>
       ) : null}
     </AnimatePresence>
+  )
+}
+
+function SpeakerSection({ report }: { report: SpeakerReport }) {
+  const maxCount = report.perWord[0]?.count ?? 1
+  return (
+    <div className="report-speaker">
+      <div className="report-speaker-head">
+        <span className="report-speaker-name">{report.name}</span>
+        <span className="report-speaker-stats">
+          {report.totalFillers} total · {report.fillersPerMin}/min ·{' '}
+          {formatDuration(report.speakingSec)}
+          {report.manualCount > 0 ? ` · ${report.manualCount} manual` : ''}
+        </span>
+      </div>
+
+      {report.summary ? (
+        <p className="report-speaker-summary">{report.summary}</p>
+      ) : null}
+
+      {report.perWord.length > 0 ? (
+        <ul className="report-word-list">
+          {report.perWord.map((w) => {
+            const hue = hueFor(w.word)
+            return (
+              <li key={w.word} className="report-word-row">
+                <span
+                  className="report-word-pill"
+                  style={{
+                    color: `hsl(${hue} 90% 78%)`,
+                    borderColor: `hsl(${hue} 80% 60% / 0.5)`,
+                  }}
+                >
+                  {w.word}
+                </span>
+                <span className="report-word-bar-wrap">
+                  <span
+                    className="report-word-bar"
+                    style={{
+                      width: `${(w.count / maxCount) * 100}%`,
+                      background: `hsl(${hue} 70% 45% / 0.85)`,
+                    }}
+                  />
+                </span>
+                <span className="report-word-count">{w.count}</span>
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <p className="dim report-speaker-empty">No fillers — clean run.</p>
+      )}
+    </div>
   )
 }
 

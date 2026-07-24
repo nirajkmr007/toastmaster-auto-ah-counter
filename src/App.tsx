@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { NameEntry } from './components/NameEntry'
+import { Roster } from './components/Roster'
 import { Controls } from './components/Controls'
 import { BubblesPane } from './components/BubblesPane'
 import { TranscriptPane } from './components/TranscriptPane'
@@ -20,28 +20,26 @@ function App() {
   const wordList = useSessionStore((s) => s.wordList)
   const sensitivity = useSessionStore((s) => s.sensitivity)
   const selectedModelId = useSessionStore((s) => s.selectedModelId)
+  const activeSpeakerId = useSessionStore((s) => s.activeSpeakerId)
   const setStatus = useSessionStore((s) => s.setStatus)
   const addTranscriptLine = useSessionStore((s) => s.addTranscriptLine)
   const setPartial = useSessionStore((s) => s.setPartial)
   const applyDetections = useSessionStore((s) => s.applyDetections)
-  const resetSession = useSessionStore((s) => s.resetSession)
+  const resetSessionData = useSessionStore((s) => s.resetSessionData)
   const markSessionStart = useSessionStore((s) => s.markSessionStart)
   const markSessionEnd = useSessionStore((s) => s.markSessionEnd)
   const openReport = useSessionStore((s) => s.openReport)
   const setLoadingMessage = useSessionStore((s) => s.setLoadingMessage)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
 
-  // Lazy-init engine keyed on selected model. If the user switches models,
-  // the current engine is torn down and a fresh one is spun up so the next
-  // Start downloads the new model. Guarded so React StrictMode's
-  // double-render doesn't double-instantiate.
+  // Lazy-init engine keyed on selected model. Switching models tears down the
+  // old engine so the next Start downloads the new model. Guarded against
+  // StrictMode double-render.
   if (
     engineRef.current === null ||
     engineRef.current.modelId !== selectedModelId
   ) {
-    if (engineRef.current) {
-      void engineRef.current.engine.stop()
-    }
+    if (engineRef.current) void engineRef.current.engine.stop()
     engineRef.current = {
       modelId: selectedModelId,
       engine: createEngine(getModel(selectedModelId)),
@@ -56,13 +54,16 @@ function App() {
     })
   }
 
-  // Keep detector config in sync with store (only while idle — Controls
-  // disables the selects during listening, so this is safe).
   useEffect(() => {
     detectorRef.current?.updateConfig({ wordList, sensitivity })
   }, [wordList, sensitivity])
 
-  // Clean up on unmount.
+  // Reset the detector's rolling frequency window when the active speaker
+  // changes, so one speaker's "so so so" doesn't prime another's threshold.
+  useEffect(() => {
+    detectorRef.current?.reset()
+  }, [activeSpeakerId])
+
   useEffect(() => {
     return () => {
       if (engineRef.current) {
@@ -76,15 +77,11 @@ function App() {
     const entry = engineRef.current
     const detector = detectorRef.current
     if (!entry || !detector) return
+    if (useSessionStore.getState().speakers.length === 0) return
     const engine = entry.engine
 
-    resetSession()
+    resetSessionData()
     detector.reset()
-
-    // Hold the UI in the "starting" state for the entire startup — including
-    // the mic-permission prompt — so Stop can't be clicked before capture is
-    // actually running (which would leak a mic stream started later) and a
-    // second Start click can't spawn a second recognizer.
     setStatus('loading-model')
 
     try {
@@ -97,15 +94,7 @@ function App() {
         onFinal: (text) => {
           addTranscriptLine(text)
           const detections = detector.process(text, Date.now())
-          if (detections.length > 0) {
-            applyDetections(detections)
-            // Useful for AH-5 offline scoring: each detection logged with
-            // the tokens on either side of the hit.
-            for (const d of detections) {
-              // eslint-disable-next-line no-console
-              console.log('[ah-counter]', d.word, '·', d.context)
-            }
-          }
+          if (detections.length > 0) applyDetections(detections)
         },
         onPartial: (text) => setPartial(text),
         onError: (err) => {
@@ -121,7 +110,7 @@ function App() {
       setStatus('error', msg)
     }
   }, [
-    resetSession,
+    resetSessionData,
     setStatus,
     addTranscriptLine,
     setPartial,
@@ -136,36 +125,44 @@ function App() {
     await entry.engine.stop()
     markSessionEnd()
     setStatus('ready')
-    // Only surface the report if there's something worth showing.
-    const { detectionLog, transcript } = useSessionStore.getState()
-    if (detectionLog.length > 0 || transcript.length > 0) openReport()
+    const { speakers } = useSessionStore.getState()
+    const anyData = speakers.some(
+      (s) => s.detectionLog.length > 0 || s.transcript.length > 0
+    )
+    if (anyData) openReport()
   }, [setStatus, markSessionEnd, openReport])
 
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
   const handleCopyLog = useCallback(async () => {
     const s = useSessionStore.getState()
     const payload = {
-      speaker: s.speakerName,
       preset: s.presetName,
       sensitivity: s.sensitivity,
-      counts: s.counts,
-      detections: s.detectionLog.map((d) => ({
-        word: d.word,
-        context: d.context,
-        timestamp: d.timestamp,
+      model: s.selectedModelId,
+      speakers: s.speakers.map((sp) => ({
+        name: sp.name,
+        counts: sp.counts,
+        speakingSec: Math.round(sp.speakingMs / 1000),
+        detections: sp.detectionLog.map((d) => ({
+          word: d.word,
+          context: d.context,
+          manual: d.manual ?? false,
+          timestamp: d.timestamp,
+        })),
+        transcript: sp.transcript.map((t) => t.text),
       })),
-      transcript: s.transcript.map((t) => t.text),
     }
     try {
       await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
       setCopyState('copied')
       setTimeout(() => setCopyState('idle'), 1500)
     } catch (err) {
-      // Fallback: log so user can still grab it from DevTools.
       // eslint-disable-next-line no-console
       console.log('[ah-counter session log]', payload, err)
     }
   }, [])
+
+  const modelName = getModel(selectedModelId).name
 
   return (
     <div className="app">
@@ -175,10 +172,10 @@ function App() {
             <span className="brand-dot" />
             <h1>Ah-Counter</h1>
           </div>
-          <Timer onAutoStop={handleStop} />
+          <Timer />
         </div>
+        <Roster />
         <div className="header-controls">
-          <NameEntry />
           <Controls onStart={handleStart} onStop={handleStop} />
         </div>
       </header>
@@ -190,7 +187,7 @@ function App() {
 
       <footer className="app-footer">
         <span className="dim">
-          Model: Vosk small-en-us · session-only, nothing is stored
+          Model: {modelName} · session-only, nothing is stored
         </span>
         <div className="footer-actions">
           {hasEndedSession ? (
@@ -207,7 +204,7 @@ function App() {
             type="button"
             className="footer-btn"
             onClick={handleCopyLog}
-            title="Copy session state as JSON (counts, detections, transcript)"
+            title="Copy session state as JSON (per speaker)"
           >
             {copyState === 'copied' ? 'Copied ✓' : 'Copy session log'}
           </button>
