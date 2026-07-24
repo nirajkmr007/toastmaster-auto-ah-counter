@@ -20,8 +20,11 @@ export function createVoskEngine(modelUrl: string): SttEngine {
   let sourceNode: MediaStreamAudioSourceNode | null = null
   let processorNode: ScriptProcessorNode | null = null
 
-  const loadModel = async (): Promise<void> => {
+  const loadModel = async (
+    onProgress?: (message: string) => void
+  ): Promise<void> => {
     if (model) return
+    onProgress?.('Downloading model…')
     if (!modelLoadPromise) modelLoadPromise = createModel(modelUrl)
     try {
       model = await modelLoadPromise

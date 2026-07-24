@@ -41,6 +41,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   const setPreset = useSessionStore((s) => s.setPreset)
   const speakerName = useSessionStore((s) => s.speakerName)
   const errorMessage = useSessionStore((s) => s.errorMessage)
+  const loadingMessage = useSessionStore((s) => s.loadingMessage)
   const targetDurationMs = useSessionStore((s) => s.targetDurationMs)
   const setTargetDuration = useSessionStore((s) => s.setTargetDuration)
   const selectedModelId = useSessionStore((s) => s.selectedModelId)
@@ -142,7 +143,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
             onClick={onStart}
             disabled={!canPressStart || isBusy}
           >
-            {isBusy ? 'Starting…' : 'Start listening'}
+            {isBusy ? loadingMessage ?? 'Starting…' : 'Start listening'}
           </button>
         )}
       </div>

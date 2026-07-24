@@ -38,7 +38,9 @@ function resampleTo16k(input: Float32Array, inRate: number): Float32Array {
 export function createWhisperEngine(modelId: string): SttEngine {
   let worker: Worker | null = null
   let workerReady = false
+  let loading = false
   let readyResolvers: { resolve: () => void; reject: (e: unknown) => void }[] = []
+  let progressCb: ((msg: string) => void) | null = null
 
   let audioContext: AudioContext | null = null
   let mediaStream: MediaStream | null = null
@@ -51,6 +53,12 @@ export function createWhisperEngine(modelId: string): SttEngine {
   let inputSampleRate = 48_000
   let seq = 0
 
+  const rejectPending = (err: unknown): void => {
+    loading = false
+    readyResolvers.forEach((r) => r.reject(err))
+    readyResolvers = []
+  }
+
   const ensureWorker = (): Worker => {
     if (worker) return worker
     worker = new Worker(new URL('./whisperWorker.ts', import.meta.url), {
@@ -58,27 +66,44 @@ export function createWhisperEngine(modelId: string): SttEngine {
     })
     worker.onmessage = (e: MessageEvent) => {
       const msg = e.data
-      if (msg.type === 'ready') {
+      if (msg.type === 'progress') {
+        progressCb?.(msg.message)
+      } else if (msg.type === 'ready') {
         workerReady = true
+        loading = false
         readyResolvers.forEach((r) => r.resolve())
         readyResolvers = []
       } else if (msg.type === 'result') {
         const text: string = (msg.text ?? '').trim()
         if (text) handlers?.onFinal(text)
       } else if (msg.type === 'error') {
-        handlers?.onError(new Error(msg.message))
+        // A load-time error must reject the pending loadModel() promise —
+        // otherwise the UI hangs on "Starting…" forever. A run-time error
+        // (after ready) goes to the session error handler.
+        if (!workerReady) {
+          rejectPending(new Error(msg.message))
+        } else {
+          handlers?.onError(new Error(msg.message))
+        }
       }
     }
-    worker.onerror = (e) => handlers?.onError(e)
+    worker.onerror = (e) => {
+      if (!workerReady) rejectPending(e)
+      else handlers?.onError(e)
+    }
     return worker
   }
 
-  const loadModel = async (): Promise<void> => {
+  const loadModel = async (onProgress?: (msg: string) => void): Promise<void> => {
     if (workerReady) return
+    progressCb = onProgress ?? null
     const w = ensureWorker()
     await new Promise<void>((resolve, reject) => {
       readyResolvers.push({ resolve, reject })
-      w.postMessage({ type: 'load', modelId })
+      if (!loading) {
+        loading = true
+        w.postMessage({ type: 'load', modelId })
+      }
     })
   }
 

@@ -23,7 +23,9 @@ export interface SttHandlers {
 }
 
 export interface SttEngine {
-  loadModel: () => Promise<void>
+  // onProgress receives human-readable status during model load (e.g. download
+  // percentage). Engines that load instantly may never call it.
+  loadModel: (onProgress?: (message: string) => void) => Promise<void>
   start: (handlers: SttHandlers) => Promise<void>
   stop: () => Promise<void>
   isModelLoaded: () => boolean

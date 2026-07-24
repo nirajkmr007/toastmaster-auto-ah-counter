@@ -28,6 +28,7 @@ function App() {
   const markSessionStart = useSessionStore((s) => s.markSessionStart)
   const markSessionEnd = useSessionStore((s) => s.markSessionEnd)
   const openReport = useSessionStore((s) => s.openReport)
+  const setLoadingMessage = useSessionStore((s) => s.setLoadingMessage)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
 
   // Lazy-init engine keyed on selected model. If the user switches models,
@@ -88,8 +89,9 @@ function App() {
 
     try {
       if (!engine.isModelLoaded()) {
-        await engine.loadModel()
+        await engine.loadModel((msg) => setLoadingMessage(msg))
       }
+      setLoadingMessage(null)
 
       await engine.start({
         onFinal: (text) => {
@@ -115,6 +117,7 @@ function App() {
       setStatus('listening')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
+      setLoadingMessage(null)
       setStatus('error', msg)
     }
   }, [
@@ -124,6 +127,7 @@ function App() {
     setPartial,
     applyDetections,
     markSessionStart,
+    setLoadingMessage,
   ])
 
   const handleStop = useCallback(async () => {
