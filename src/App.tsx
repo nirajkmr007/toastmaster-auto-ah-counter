@@ -30,7 +30,16 @@ function App() {
   const markSessionEnd = useSessionStore((s) => s.markSessionEnd)
   const openReport = useSessionStore((s) => s.openReport)
   const setLoadingMessage = useSessionStore((s) => s.setLoadingMessage)
+  const status = useSessionStore((s) => s.status)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
+  const hasData = useSessionStore((s) =>
+    s.speakers.some(
+      (sp) =>
+        sp.detectionLog.length > 0 ||
+        sp.transcript.length > 0 ||
+        sp.speakingMs > 0
+    )
+  )
 
   // Lazy-init engine keyed on selected model. Switching models tears down the
   // old engine so the next Start downloads the new model. Guarded against
@@ -80,7 +89,9 @@ function App() {
     if (useSessionStore.getState().speakers.length === 0) return
     const engine = entry.engine
 
-    resetSessionData()
+    // NOTE: we intentionally do NOT clear speaker data here. Start resumes the
+    // meeting so stopping between speakers (and starting again) keeps everyone's
+    // counts. A fresh meeting is started with the "New session" button.
     detector.reset()
     setStatus('loading-model')
 
@@ -110,7 +121,6 @@ function App() {
       setStatus('error', msg)
     }
   }, [
-    resetSessionData,
     setStatus,
     addTranscriptLine,
     setPartial,
@@ -118,6 +128,10 @@ function App() {
     markSessionStart,
     setLoadingMessage,
   ])
+
+  const handleNewSession = useCallback(() => {
+    resetSessionData()
+  }, [resetSessionData])
 
   const handleStop = useCallback(async () => {
     const entry = engineRef.current
@@ -198,6 +212,16 @@ function App() {
               title="Reopen the last session report"
             >
               View report
+            </button>
+          ) : null}
+          {hasData && status !== 'listening' ? (
+            <button
+              type="button"
+              className="footer-btn footer-btn-danger"
+              onClick={handleNewSession}
+              title="Clear all counts and transcripts (keeps the speaker roster)"
+            >
+              New session
             </button>
           ) : null}
           <button

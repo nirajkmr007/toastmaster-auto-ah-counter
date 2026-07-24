@@ -228,7 +228,10 @@ export const useSessionStore = create<SessionState>((set) => ({
     set((state) => {
       const now = Date.now()
       return {
-        sessionStartAt: now,
+        // Preserve the original start time when resuming a stopped session so
+        // Start acts as "continue the meeting", not "wipe and restart". A
+        // fresh meeting is begun explicitly via resetSessionData().
+        sessionStartAt: state.sessionStartAt ?? now,
         sessionEndAt: null,
         speakers: state.speakers.map((sp) =>
           sp.id === state.activeSpeakerId ? { ...sp, activeSince: now } : sp

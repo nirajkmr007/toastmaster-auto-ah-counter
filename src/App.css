@@ -407,6 +407,10 @@
   border-color: var(--accent);
   background: var(--bg-elev-2);
 }
+.footer-btn-danger:hover {
+  border-color: var(--stop);
+  color: var(--stop);
+}
 
 /* ---- session report overlay ---- */
 .report-backdrop {
