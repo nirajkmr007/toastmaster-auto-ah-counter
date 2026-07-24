@@ -7,4 +7,15 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/toastmaster-auto-ah-counter/' : '/',
   plugins: [react()],
+  worker: {
+    // The CrisperWhisper engine runs in a module worker; keep the format
+    // explicit so bare imports (transformers.js) resolve the same way in
+    // dev and build.
+    format: 'es',
+  },
+  optimizeDeps: {
+    // transformers.js bundles onnxruntime-web (wasm). esbuild's dep
+    // pre-bundling mangles that, so let Vite serve it as native ESM instead.
+    exclude: ['@huggingface/transformers'],
+  },
 }))

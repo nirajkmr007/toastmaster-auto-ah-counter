@@ -52,21 +52,34 @@ npm run dev
 
 ## Choosing a model
 
-The **Model** dropdown in the header selects which STT model to use. Out of
-the box the catalog ships with one verified model:
+The **Model** dropdown in the header selects which STT model to use. Two
+engines ship out of the box:
 
-| ID                 | Language | Size   | Notes                            |
-| ------------------ | -------- | ------ | -------------------------------- |
-| `vosk-small-en-us` | en-US    | ~40 MB | Default. Fast, decent accuracy.  |
+| ID                 | Engine             | Size    | Fillers  | Notes                                                     |
+| ------------------ | ------------------ | ------- | -------- | --------------------------------------------------------- |
+| `vosk-small-en-us` | Vosk (streaming)   | ~40 MB  | Decent   | Default. Fast, word-by-word, works everywhere.            |
+| `crisperwhisper`   | transformers.js    | ~500 MB | Best     | Verbatim disfluency accuracy. Large download, ~6 s chunks. |
 
-The `models.ts` file also has commented-out entries for a larger en-US model
-and an en-IN (Indian English) model — see the next section to enable them.
-They're not on by default because they need to be self-hosted (ccoreilly's
-CDN mirror only reliably serves the small en-US tarball, and Vosk's official
-mirror only publishes `.zip`, which vosk-browser can't read).
+Everything runs locally — models are fetched once (browser-cached) and audio
+never leaves the tab.
 
-Models are downloaded once per browser (HTTP-cached) and stream audio through
-a Web Worker locally — nothing leaves the tab.
+**CrisperWhisper caveats (it's the accurate-but-heavy option):**
+
+- Whisper isn't a streaming model, so this engine transcribes in ~6-second
+  segments — you'll see the transcript and counters update every few seconds,
+  not word-by-word like Vosk.
+- Large first-load download (~500 MB, cached afterward). Use a good connection
+  the first time.
+- Needs a modern browser. It prefers **WebGPU** and falls back to CPU/WASM
+  (much slower). On GitHub Pages the multi-threaded WASM path is limited
+  because Pages can't send the COOP/COEP headers `SharedArrayBuffer` requires
+  — WebGPU sidesteps that, so a WebGPU-capable browser (recent Chrome/Edge)
+  is strongly recommended.
+- Best used with a **time limit** set, so the model isn't grinding on an
+  open-ended session.
+
+Keep Vosk as the default for live meetings; reach for CrisperWhisper when you
+want the most accurate filler count and can wait for the download.
 
 ## Adding a new model
 
@@ -126,6 +139,16 @@ CrisperWhisper — anything that keeps disfluencies), do four things:
 No change is needed anywhere else — the store, UI, timer, detection rules,
 session report, and PNG export all keep working, because they only touch the
 `SttEngine` interface.
+
+**Worked example — the CrisperWhisper engine.** The second engine that ships
+today is a concrete template for the steps above:
+[`src/audio/whisperEngine.ts`](src/audio/whisperEngine.ts) implements
+`SttEngine` on top of transformers.js, with heavy inference pushed into
+[`src/audio/whisperWorker.ts`](src/audio/whisperWorker.ts) (a Web Worker) so
+the UI stays responsive. Because Whisper isn't streaming, the engine buffers
+mic audio and flushes *non-overlapping* ~6 s segments to the worker — the
+non-overlap is deliberate, so a filler caught near a boundary isn't counted
+twice. Copy this file as a starting point for any chunk-based engine.
 
 ## Deploy (GitHub Pages)
 

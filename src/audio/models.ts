@@ -11,7 +11,7 @@
  * step-by-step ("Adding a new model" → "Self-hosting").
  */
 
-export type EngineType = 'vosk'
+export type EngineType = 'vosk' | 'transformers-whisper'
 
 export interface ModelInfo {
   id: string
@@ -35,6 +35,20 @@ export const MODELS: ModelInfo[] = [
       'Fast download, decent accuracy for American English. Default.',
     url: `${CCOREILLY}/vosk-model-small-en-us-0.15.tar.gz`,
     engineType: 'vosk',
+  },
+  {
+    id: 'crisperwhisper',
+    name: 'CrisperWhisper (verbatim, large)',
+    language: 'en',
+    approxSizeMB: 500,
+    description:
+      'Whisper fine-tuned to keep every um/uh. Most accurate on fillers, ' +
+      'but a large first-load download and needs a modern browser (WebGPU ' +
+      'recommended). Transcribes in ~6s segments, not word-by-word.',
+    // transformers.js resolves this against the HuggingFace hub; it is a
+    // model repo id, not a tarball URL like the Vosk entries.
+    url: 'onnx-community/CrisperWhisper-ONNX',
+    engineType: 'transformers-whisper',
   },
 
   // --- Self-hosted extras (uncomment after dropping the .tar.gz under

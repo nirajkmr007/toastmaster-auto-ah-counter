@@ -14,6 +14,7 @@
 
 import type { ModelInfo } from './models'
 import { createVoskEngine } from './voskEngine'
+import { createWhisperEngine } from './whisperEngine'
 
 export interface SttHandlers {
   onPartial: (text: string) => void
@@ -29,8 +30,12 @@ export interface SttEngine {
 }
 
 export function createEngine(model: ModelInfo): SttEngine {
-  if (model.engineType === 'vosk') {
-    return createVoskEngine(model.url)
+  switch (model.engineType) {
+    case 'vosk':
+      return createVoskEngine(model.url)
+    case 'transformers-whisper':
+      return createWhisperEngine(model.url)
+    default:
+      throw new Error(`Unknown STT engine type: ${model.engineType}`)
   }
-  throw new Error(`Unknown STT engine type: ${model.engineType}`)
 }
