@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useSessionStore, selectActiveSpeaker } from '../store'
 import { manualAddWords } from '../detection/detector'
 
@@ -14,6 +14,8 @@ export function BubblesPane() {
   const active = useSessionStore(selectActiveSpeaker)
   const wordList = useSessionStore((s) => s.wordList)
   const addManualDetection = useSessionStore((s) => s.addManualDetection)
+  const addCustomWord = useSessionStore((s) => s.addCustomWord)
+  const [customWord, setCustomWord] = useState('')
 
   const counts = active?.counts ?? {}
   const detectionLog = active?.detectionLog ?? []
@@ -30,6 +32,13 @@ export function BubblesPane() {
   const total = bubbles.reduce((s, b) => s + b.count, 0)
   const logTail = detectionLog.slice(-12).reverse()
   const manualButtons = useMemo(() => manualAddWords(wordList), [wordList])
+
+  const submitCustomWord = () => {
+    const w = customWord.trim()
+    if (!w) return
+    addCustomWord(w)
+    setCustomWord('')
+  }
 
   if (!active) {
     return (
@@ -151,6 +160,29 @@ export function BubblesPane() {
               +{w}
             </button>
           ))}
+        </div>
+        <div className="custom-word">
+          <input
+            type="text"
+            className="custom-word-input"
+            placeholder="Add a missing filler word or phrase…"
+            value={customWord}
+            onChange={(e) => setCustomWord(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') submitCustomWord()
+            }}
+            maxLength={30}
+            autoComplete="off"
+          />
+          <button
+            type="button"
+            className="custom-word-btn"
+            onClick={submitCustomWord}
+            disabled={!customWord.trim()}
+            title="Add to the filler list — appears as a button and is auto-detected"
+          >
+            Add word
+          </button>
         </div>
       </div>
     </div>

@@ -65,6 +65,8 @@ export interface SessionState {
   setActiveSpeaker: (id: string) => void
 
   // active-speaker data
+  addCustomWord: (word: string) => void
+
   addTranscriptLine: (text: string) => void
   setPartial: (text: string) => void
   applyDetections: (detections: Detection[]) => void
@@ -200,6 +202,33 @@ export const useSessionStore = create<SessionState>((set) => ({
           for (const d of detections) counts[d.word] = (counts[d.word] ?? 0) + 1
           return { ...sp, counts, detectionLog: [...sp.detectionLog, ...detections] }
         }),
+      }
+    }),
+
+  // Add a filler the presets miss. Single word → crutch word; multi-word →
+  // phrase. Immediately becomes a tap-to-add button and is picked up by the
+  // auto-detector (App syncs the detector config when wordList changes).
+  addCustomWord: (raw) =>
+    set((state) => {
+      const word = raw.toLowerCase().trim().replace(/\s+/g, ' ')
+      if (!word) return {}
+      const existing = new Set<string>([
+        ...state.wordList.soundFillers.map(canonicalFiller),
+        ...state.wordList.crutchWords,
+        ...state.wordList.crutchPhrases,
+      ])
+      if (existing.has(word)) return {}
+      const isPhrase = word.includes(' ')
+      return {
+        wordList: {
+          ...state.wordList,
+          crutchWords: isPhrase
+            ? state.wordList.crutchWords
+            : [...state.wordList.crutchWords, word],
+          crutchPhrases: isPhrase
+            ? [...state.wordList.crutchPhrases, word]
+            : state.wordList.crutchPhrases,
+        },
       }
     }),
 

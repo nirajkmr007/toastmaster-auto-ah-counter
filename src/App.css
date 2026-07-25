@@ -762,6 +762,45 @@
 .manual-btn:active {
   transform: translateY(0) scale(0.96);
 }
+.custom-word {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.custom-word-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.custom-word-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.custom-word-btn {
+  flex: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+  color: var(--text-h);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.custom-word-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.custom-word-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* ---- timer signal colors ---- */
 .timer-who {
