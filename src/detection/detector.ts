@@ -37,9 +37,12 @@ export interface Detection {
   manual?: boolean // true when added by the operator, not the model
 }
 
-// Vosk transcribes drawn-out disfluencies inconsistently (um/umm/ummm). Collapse
-// each family to one canonical label so counts and bubbles don't fragment, and
-// so the manual-add buttons show one button per sound rather than every variant.
+// Single source of truth for sound fillers. Vosk transcribes drawn-out
+// disfluencies inconsistently (um/umm/ummm), so we enumerate every likely
+// spelling here and map each to one canonical label — collapsing counts and
+// bubbles, and giving the manual-add buttons one entry per sound. The presets'
+// `soundFillers` list is derived from these keys (see SOUND_FILLER_VARIANTS),
+// so the spellings live in exactly one place.
 const FILLER_CANONICAL: Record<string, string> = {
   um: 'um', umm: 'um', ummm: 'um',
   uh: 'uh', uhh: 'uh', uhhh: 'uh',
@@ -50,6 +53,10 @@ const FILLER_CANONICAL: Record<string, string> = {
   eh: 'eh', ehh: 'eh',
   mm: 'mm', mmm: 'mm',
 }
+
+// Every recognized sound-filler spelling — the keys of FILLER_CANONICAL.
+// Presets use this so the variant list isn't duplicated.
+export const SOUND_FILLER_VARIANTS: string[] = Object.keys(FILLER_CANONICAL)
 
 export function canonicalFiller(word: string): string {
   return FILLER_CANONICAL[word.toLowerCase().trim()] ?? word.toLowerCase().trim()

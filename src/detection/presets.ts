@@ -1,19 +1,7 @@
-import type { WordList } from './detector'
+import { SOUND_FILLER_VARIANTS, type WordList } from './detector'
 
-// Sound-filler variants — Vosk's small-en model transcribes disfluencies
-// inconsistently (um / umm / ummm all appear depending on how the speaker
-// draws it out), so we enumerate every likely spelling instead of relying on
-// a fuzzy matcher.
-const SOUND_FILLER_VARIANTS = [
-  'um', 'umm', 'ummm',
-  'uh', 'uhh', 'uhhh',
-  'er', 'err', 'erm',
-  'ah', 'ahh', 'ahhh',
-  'hmm', 'hmmm', 'hm',
-  'huh',
-  'eh', 'ehh',
-  'mm', 'mmm',
-]
+// Sound-filler spellings live in detector.ts (FILLER_CANONICAL) so the list
+// and the variant→canonical map can't drift apart. Presets just reference it.
 
 export const TOASTMASTERS_CLASSIC: WordList = {
   soundFillers: SOUND_FILLER_VARIANTS,
