@@ -4,6 +4,7 @@ import { Controls } from './components/Controls'
 import { BubblesPane } from './components/BubblesPane'
 import { TranscriptPane } from './components/TranscriptPane'
 import { SessionReport } from './components/SessionReport'
+import { SettingsPanel } from './components/SettingsPanel'
 import { Timer } from './components/Timer'
 import { useSessionStore } from './store'
 import { createDetector, type Detector } from './detection/detector'
@@ -30,6 +31,7 @@ function App() {
   const markSessionEnd = useSessionStore((s) => s.markSessionEnd)
   const openReport = useSessionStore((s) => s.openReport)
   const setLoadingMessage = useSessionStore((s) => s.setLoadingMessage)
+  const openSettings = useSessionStore((s) => s.openSettings)
   const status = useSessionStore((s) => s.status)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
   const hasData = useSessionStore((s) =>
@@ -186,7 +188,18 @@ function App() {
             <span className="brand-dot" />
             <h1>Ah-Counter</h1>
           </div>
-          <Timer />
+          <div className="brand-right">
+            <Timer />
+            <button
+              type="button"
+              className="gear-btn"
+              onClick={openSettings}
+              aria-label="Manage filler words"
+              title="Manage filler words"
+            >
+              ⚙
+            </button>
+          </div>
         </div>
         <Roster />
         <div className="header-controls">
@@ -236,6 +249,7 @@ function App() {
       </footer>
 
       <SessionReport />
+      <SettingsPanel />
     </div>
   )
 }

@@ -1,8 +1,11 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { Detection, Sensitivity, WordList } from './detection/detector'
 import { canonicalFiller } from './detection/detector'
 import { TOASTMASTERS_CLASSIC } from './detection/presets'
 import { DEFAULT_MODEL_ID } from './audio/models'
+
+export type FillerGroup = 'sound' | 'word'
 
 export type EngineStatus =
   | 'idle'
@@ -45,6 +48,7 @@ export interface SessionState {
   sessionStartAt: number | null
   sessionEndAt: number | null
   showReport: boolean
+  showSettings: boolean
 
   targetDurationMs: number | null // per-speech time guide (green/yellow/red)
 
@@ -59,13 +63,16 @@ export interface SessionState {
   setSelectedModel: (id: string) => void
   setLoadingMessage: (msg: string | null) => void
 
+  // filler-word management
+  addFiller: (word: string, group: FillerGroup) => void
+  removeFiller: (word: string) => void
+  openSettings: () => void
+  closeSettings: () => void
+
   // roster
   addSpeaker: (name: string) => void
   removeSpeaker: (id: string) => void
   setActiveSpeaker: (id: string) => void
-
-  // active-speaker data
-  addCustomWord: (word: string) => void
 
   addTranscriptLine: (text: string) => void
   setPartial: (text: string) => void
@@ -99,7 +106,9 @@ function flushSpeaking(sp: Speaker, now: number): Speaker {
   return { ...sp, speakingMs: sp.speakingMs + (now - sp.activeSince), activeSince: null }
 }
 
-export const useSessionStore = create<SessionState>((set) => ({
+export const useSessionStore = create<SessionState>()(
+  persist(
+    (set) => ({
   status: 'idle',
   errorMessage: null,
 
@@ -113,6 +122,7 @@ export const useSessionStore = create<SessionState>((set) => ({
   sessionStartAt: null,
   sessionEndAt: null,
   showReport: false,
+  showSettings: false,
 
   targetDurationMs: null,
 
@@ -205,10 +215,12 @@ export const useSessionStore = create<SessionState>((set) => ({
       }
     }),
 
-  // Add a filler the presets miss. Single word → crutch word; multi-word →
-  // phrase. Immediately becomes a tap-to-add button and is picked up by the
-  // auto-detector (App syncs the detector config when wordList changes).
-  addCustomWord: (raw) =>
+  // Add a filler to the effective list. `group` picks the bucket for a single
+  // word: 'sound' (always-counted, variant-collapsed) or 'word' (crutch word
+  // with context rules). Multi-word entries always become phrases regardless
+  // of group. Changes are picked up live by the detector (App syncs config on
+  // wordList change) and persisted to localStorage.
+  addFiller: (raw, group) =>
     set((state) => {
       const word = raw.toLowerCase().trim().replace(/\s+/g, ' ')
       if (!word) return {}
@@ -219,18 +231,38 @@ export const useSessionStore = create<SessionState>((set) => ({
       ])
       if (existing.has(word)) return {}
       const isPhrase = word.includes(' ')
+      const wl = state.wordList
+      let next: WordList
+      if (isPhrase) {
+        next = { ...wl, crutchPhrases: [...wl.crutchPhrases, word] }
+      } else if (group === 'sound') {
+        next = { ...wl, soundFillers: [...wl.soundFillers, word] }
+      } else {
+        next = { ...wl, crutchWords: [...wl.crutchWords, word] }
+      }
+      return { wordList: next, presetName: 'Custom' }
+    }),
+
+  // Remove a filler by label. For sounds the label is canonical, so drop every
+  // variant that canonicalizes to it; crutch words / phrases match exactly.
+  removeFiller: (raw) =>
+    set((state) => {
+      const w = raw.toLowerCase().trim()
+      const wl = state.wordList
       return {
         wordList: {
-          ...state.wordList,
-          crutchWords: isPhrase
-            ? state.wordList.crutchWords
-            : [...state.wordList.crutchWords, word],
-          crutchPhrases: isPhrase
-            ? [...state.wordList.crutchPhrases, word]
-            : state.wordList.crutchPhrases,
+          soundFillers: wl.soundFillers.filter(
+            (v) => v !== w && canonicalFiller(v) !== w
+          ),
+          crutchWords: wl.crutchWords.filter((x) => x !== w),
+          crutchPhrases: wl.crutchPhrases.filter((x) => x !== w),
         },
+        presetName: 'Custom',
       }
     }),
+
+  openSettings: () => set({ showSettings: true }),
+  closeSettings: () => set({ showSettings: false }),
 
   addManualDetection: (word) =>
     set((state) => {
@@ -300,7 +332,23 @@ export const useSessionStore = create<SessionState>((set) => ({
       showReport: false,
       errorMessage: null,
     })),
-}))
+    }),
+    {
+      name: 'ah-counter-config',
+      version: 1,
+      // Persist ONLY configuration — never speech, transcripts, or the speaker
+      // roster. The "audio never leaves the tab" guarantee is unaffected;
+      // this just remembers the user's word list and preferences.
+      partialize: (s) => ({
+        wordList: s.wordList,
+        presetName: s.presetName,
+        sensitivity: s.sensitivity,
+        selectedModelId: s.selectedModelId,
+        targetDurationMs: s.targetDurationMs,
+      }),
+    }
+  )
+)
 
 // Convenience selector: the currently-active speaker object (or null).
 export function selectActiveSpeaker(state: SessionState): Speaker | null {

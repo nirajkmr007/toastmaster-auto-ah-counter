@@ -14,7 +14,7 @@ export function BubblesPane() {
   const active = useSessionStore(selectActiveSpeaker)
   const wordList = useSessionStore((s) => s.wordList)
   const addManualDetection = useSessionStore((s) => s.addManualDetection)
-  const addCustomWord = useSessionStore((s) => s.addCustomWord)
+  const addFiller = useSessionStore((s) => s.addFiller)
   const [customWord, setCustomWord] = useState('')
 
   const counts = active?.counts ?? {}
@@ -36,7 +36,7 @@ export function BubblesPane() {
   const submitCustomWord = () => {
     const w = customWord.trim()
     if (!w) return
-    addCustomWord(w)
+    addFiller(w, 'word')
     setCustomWord('')
   }
 

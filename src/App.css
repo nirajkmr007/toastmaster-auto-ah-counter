@@ -31,6 +31,28 @@
   align-items: center;
   gap: 12px;
 }
+.brand-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.gear-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.gear-btn:hover {
+  border-color: var(--accent);
+  background: var(--bg-elev-2);
+  transform: rotate(30deg);
+}
 .brand h1 {
   font-size: 22px;
   letter-spacing: -0.02em;
@@ -884,4 +906,126 @@
 .report-speaker-empty {
   margin: 0;
   font-size: 13px;
+}
+
+/* ---- settings / manage filler words ---- */
+.settings-card {
+  max-width: 560px;
+}
+.settings-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elev-2);
+}
+.settings-group-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.settings-group-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.settings-group-sub {
+  font-size: 12px;
+}
+.settings-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.settings-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text-h);
+}
+.settings-chip-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  border-radius: 6px;
+}
+.settings-chip-remove:hover {
+  color: var(--stop);
+}
+.settings-empty {
+  margin: 0;
+  font-size: 13px;
+}
+.settings-add {
+  display: flex;
+  gap: 6px;
+}
+.settings-add input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.settings-add input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.settings-add-btn {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text-h);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.settings-add-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.settings-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.settings-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.settings-presets-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.settings-preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

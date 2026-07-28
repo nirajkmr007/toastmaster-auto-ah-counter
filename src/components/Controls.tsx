@@ -1,6 +1,5 @@
 import { useSessionStore } from '../store'
 import type { Sensitivity } from '../detection/detector'
-import { PRESETS } from '../detection/presets'
 import { MODELS } from '../audio/models'
 
 interface ControlsProps {
@@ -37,8 +36,6 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   const status = useSessionStore((s) => s.status)
   const sensitivity = useSessionStore((s) => s.sensitivity)
   const setSensitivity = useSessionStore((s) => s.setSensitivity)
-  const presetName = useSessionStore((s) => s.presetName)
-  const setPreset = useSessionStore((s) => s.setPreset)
   const speakerCount = useSessionStore((s) => s.speakers.length)
   const errorMessage = useSessionStore((s) => s.errorMessage)
   const loadingMessage = useSessionStore((s) => s.loadingMessage)
@@ -67,22 +64,6 @@ export function Controls({ onStart, onStop }: ControlsProps) {
             {MODELS.map((m) => (
               <option key={m.id} value={m.id} title={m.description}>
                 {m.name} · {m.approxSizeMB} MB
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="select-group">
-          <label htmlFor="preset">Preset</label>
-          <select
-            id="preset"
-            value={presetName}
-            onChange={(e) => setPreset(e.target.value, PRESETS[e.target.value])}
-            disabled={isRunning || isBusy}
-          >
-            {Object.keys(PRESETS).map((name) => (
-              <option key={name} value={name}>
-                {name}
               </option>
             ))}
           </select>
