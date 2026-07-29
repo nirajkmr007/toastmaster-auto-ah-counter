@@ -291,6 +291,7 @@
   align-content: flex-start;
 }
 .bubble {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -299,6 +300,39 @@
   border: 1.5px solid;
   font-weight: 500;
   min-width: 90px;
+}
+.bubble-close {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.12s, color 0.12s, border-color 0.12s;
+}
+.bubble:hover .bubble-close,
+.bubble:focus-within .bubble-close {
+  opacity: 1;
+}
+.bubble-close:hover {
+  color: var(--stop);
+  border-color: var(--stop);
+}
+/* Touch devices have no hover — keep the clear button visible there. */
+@media (hover: none) {
+  .bubble-close {
+    opacity: 1;
+  }
 }
 .bubble-count {
   font-family: var(--mono);

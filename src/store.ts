@@ -79,6 +79,7 @@ export interface SessionState {
   applyDetections: (detections: Detection[]) => void
   addManualDetection: (word: string) => void
   decrementDetection: (word: string) => void
+  clearDetection: (word: string) => void
 
   // session lifecycle
   markSessionStart: () => void
@@ -309,6 +310,27 @@ export const useSessionStore = create<SessionState>()(
             }
           }
           return { ...sp, counts, detectionLog: log }
+        }),
+      }
+    }),
+
+  // Clear a whole bubble at once — the word's count goes to zero (bubble
+  // disappears) and all its logged hits are dropped. For a badly over-counted
+  // word this beats tapping "−" N times.
+  clearDetection: (word) =>
+    set((state) => {
+      if (!state.activeSpeakerId) return {}
+      return {
+        speakers: state.speakers.map((sp) => {
+          if (sp.id !== state.activeSpeakerId) return sp
+          if (!(word in sp.counts)) return sp
+          const counts = { ...sp.counts }
+          delete counts[word]
+          return {
+            ...sp,
+            counts,
+            detectionLog: sp.detectionLog.filter((d) => d.word !== word),
+          }
         }),
       }
     }),

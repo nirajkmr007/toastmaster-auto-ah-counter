@@ -15,6 +15,7 @@ export function BubblesPane() {
   const wordList = useSessionStore((s) => s.wordList)
   const addManualDetection = useSessionStore((s) => s.addManualDetection)
   const decrementDetection = useSessionStore((s) => s.decrementDetection)
+  const clearDetection = useSessionStore((s) => s.clearDetection)
   const addFiller = useSessionStore((s) => s.addFiller)
   const [customWord, setCustomWord] = useState('')
 
@@ -122,6 +123,15 @@ export function BubblesPane() {
                         title="Add one"
                       >
                         +
+                      </button>
+                      <button
+                        type="button"
+                        className="bubble-close"
+                        onClick={() => clearDetection(b.word)}
+                        aria-label={`Clear all ${b.word}`}
+                        title="Clear this word entirely"
+                      >
+                        ×
                       </button>
                     </motion.div>
                   )
