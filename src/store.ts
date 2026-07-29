@@ -78,6 +78,7 @@ export interface SessionState {
   setPartial: (text: string) => void
   applyDetections: (detections: Detection[]) => void
   addManualDetection: (word: string) => void
+  decrementDetection: (word: string) => void
 
   // session lifecycle
   markSessionStart: () => void
@@ -281,6 +282,33 @@ export const useSessionStore = create<SessionState>()(
           const counts = { ...sp.counts }
           counts[canonical] = (counts[canonical] ?? 0) + 1
           return { ...sp, counts, detectionLog: [...sp.detectionLog, det] }
+        }),
+      }
+    }),
+
+  // Undo a count on the active speaker — e.g. the model flagged a false
+  // positive. Decrements the tally and drops the most recent matching entry
+  // from the log so counts, the log, and the report stay consistent. Removing
+  // the last one takes the bubble to zero and it disappears.
+  decrementDetection: (word) =>
+    set((state) => {
+      if (!state.activeSpeakerId) return {}
+      return {
+        speakers: state.speakers.map((sp) => {
+          if (sp.id !== state.activeSpeakerId) return sp
+          const cur = sp.counts[word] ?? 0
+          if (cur <= 0) return sp
+          const counts = { ...sp.counts }
+          if (cur - 1 <= 0) delete counts[word]
+          else counts[word] = cur - 1
+          const log = [...sp.detectionLog]
+          for (let i = log.length - 1; i >= 0; i--) {
+            if (log[i].word === word) {
+              log.splice(i, 1)
+              break
+            }
+          }
+          return { ...sp, counts, detectionLog: log }
         }),
       }
     }),

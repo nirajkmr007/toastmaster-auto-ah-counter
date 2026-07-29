@@ -14,6 +14,7 @@ export function BubblesPane() {
   const active = useSessionStore(selectActiveSpeaker)
   const wordList = useSessionStore((s) => s.wordList)
   const addManualDetection = useSessionStore((s) => s.addManualDetection)
+  const decrementDetection = useSessionStore((s) => s.decrementDetection)
   const addFiller = useSessionStore((s) => s.addFiller)
   const [customWord, setCustomWord] = useState('')
 
@@ -94,6 +95,15 @@ export function BubblesPane() {
                         color: `hsl(${hue} 90% 85%)`,
                       }}
                     >
+                      <button
+                        type="button"
+                        className="bubble-step"
+                        onClick={() => decrementDetection(b.word)}
+                        aria-label={`Decrease ${b.word} (remove a miscount)`}
+                        title="Remove one (miscounted)"
+                      >
+                        −
+                      </button>
                       <motion.span
                         className="bubble-count"
                         key={b.count}
@@ -104,6 +114,15 @@ export function BubblesPane() {
                         {b.count}
                       </motion.span>
                       <span className="bubble-word">{b.word}</span>
+                      <button
+                        type="button"
+                        className="bubble-step"
+                        onClick={() => addManualDetection(b.word)}
+                        aria-label={`Increase ${b.word}`}
+                        title="Add one"
+                      >
+                        +
+                      </button>
                     </motion.div>
                   )
                 })}
