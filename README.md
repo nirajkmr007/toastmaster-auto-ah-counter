@@ -45,6 +45,46 @@ Chrome or Edge, allow microphone access when prompted. First load fetches the
 - @huggingface/transformers — optional CrisperWhisper engine (Web Worker)
 - html-to-image — PNG export of the session report
 
+## How your voice becomes a counted filler
+
+The path from a spoken "um" to a bubble on screen, and who owns each step:
+
+```mermaid
+flowchart LR
+  A["Capture<br/><small>mic to 16 kHz PCM</small>"] --> B["Acoustic model<br/><small>audio to phonemes</small>"]
+  B --> C["Dictionary<br/><small>phonemes to words</small>"]
+  C --> D["Language model<br/><small>pick best sequence</small>"]
+  D --> E["Transcript<br/><small>words to text</small>"]
+  E --> F["Filler detector<br/><small>flag and count</small>"]
+
+  subgraph audio [audio]
+    A
+  end
+  subgraph vosk [Vosk speech-to-text]
+    B
+    C
+    D
+    E
+  end
+  subgraph app [app filler logic]
+    F
+  end
+```
+
+Stages B–E all live inside Vosk — which is why the only place to influence
+filler recognition without retraining is the **language model** (stage D). The
+dictionary (stage C) is why `um`/`uh` can be output at all: a word must be in
+it to ever appear. See
+[`docs/lm-fine-tuning-explained.md`](docs/lm-fine-tuning-explained.md) for the
+tuning details.
+
+**Animated version:** open [`public/pipeline.html`](public/pipeline.html) in a
+browser (double-click the file, or on the live site visit
+`/toastmaster-auto-ah-counter/pipeline.html`) — it steps through each stage
+with the example phrase "so um i think". The animation is JavaScript, so it
+won't play in this README on GitHub; the Mermaid diagram above is the static
+view.
+
 ## Getting started
 
 First-time setup (installs Node 22 via Homebrew/apt if missing, then `npm install`):

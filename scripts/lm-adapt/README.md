@@ -5,6 +5,11 @@ more likely to output `um`/`uh`/`er`/`ah` instead of "correcting" them into
 real words. It does **not** retrain the acoustic model, and it can't add words
 the model's dictionary doesn't already have (the fillers are already there).
 
+> New here? Read [`docs/lm-fine-tuning-explained.md`](../../docs/lm-fine-tuning-explained.md)
+> first — it explains *how* this works and, importantly, how to balance the
+> recall/precision trade-off (the tuned model tends to over-count). This file
+> is just the operational commands.
+
 Mirrors the official procedure: <https://alphacephei.com/vosk/adaptation>
 
 > Honest expectations: this raises filler **recall** but can lower precision
