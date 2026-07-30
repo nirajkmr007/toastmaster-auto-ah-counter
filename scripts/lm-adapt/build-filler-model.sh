@@ -26,8 +26,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 CACHE_DIR="$SCRIPT_DIR/.cache"
 
 GENERIC="${1:-$CACHE_DIR/generic-en.txt}"
-FILLER_RATE="${2:-0.12}"
-MAX_LINES="${3:-50000}"
+FILLER_RATE="${2:-0.8}"
+MAX_LINES="${3:-150000}"
 
 MODEL_NAME="vosk-model-small-en-us-0.15"
 BASE_URL="https://ccoreilly.github.io/vosk-browser/models/${MODEL_NAME}.tar.gz"

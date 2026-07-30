@@ -26,13 +26,24 @@ export interface ModelInfo {
 const CCOREILLY = 'https://ccoreilly.github.io/vosk-browser/models'
 
 export const MODELS: ModelInfo[] = [
+  // Filler-tuned model (default) — the stock small acoustic model with its
+  // language model re-weighted toward um/uh/er/ah. Built via scripts/lm-adapt
+  // and shipped in public/models.
+  {
+    id: 'vosk-small-en-us-fillers',
+    name: 'Vosk small (en-US, filler-tuned)',
+    language: 'en-US',
+    approxSizeMB: 40,
+    description: 'Default. Language model tuned to catch fillers (um/uh/er/ah).',
+    url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-us-0.15-fillers.tar.gz`,
+    engineType: 'vosk',
+  },
   {
     id: 'vosk-small-en-us',
     name: 'Vosk small (en-US)',
     language: 'en-US',
     approxSizeMB: 40,
-    description:
-      'Fast download, decent accuracy for American English. Default.',
+    description: 'Stock model, untuned. Fast, decent American English.',
     url: `${CCOREILLY}/vosk-model-small-en-us-0.15.tar.gz`,
     engineType: 'vosk',
   },
@@ -60,22 +71,6 @@ export const MODELS: ModelInfo[] = [
     engineType: 'vosk',
   },
 
-  // Filler-tuned model — same acoustic model as the default, but with a
-  // language model re-weighted toward um/uh/er/ah. Build it offline first
-  // (see scripts/lm-adapt/README.md). NOTE: the .tar.gz is git-ignored, so this
-  // works locally but 404s on the deployed site unless you also ship the model.
-  {
-    id: 'vosk-small-en-us-fillers',
-    name: 'Vosk small (en-US, filler-tuned)',
-    language: 'en-US',
-    approxSizeMB: 40,
-    description:
-      'Default model with its LM rebuilt to favour fillers. Self-hosted — ' +
-      'build via scripts/lm-adapt.',
-    url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-us-0.15-fillers.tar.gz`,
-    engineType: 'vosk',
-  },
-
   {
     id: 'crisperwhisper',
     name: 'CrisperWhisper (verbatim, large)',
@@ -92,7 +87,7 @@ export const MODELS: ModelInfo[] = [
   },
 ]
 
-export const DEFAULT_MODEL_ID = 'vosk-small-en-us'
+export const DEFAULT_MODEL_ID = 'vosk-small-en-us-fillers'
 
 export function getModel(id: string): ModelInfo {
   return MODELS.find((m) => m.id === id) ?? MODELS[0]
