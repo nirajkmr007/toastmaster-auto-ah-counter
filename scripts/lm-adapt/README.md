@@ -124,23 +124,39 @@ cd /work
 # ...then run the corpus + rebuild steps below; public/models/ is on your host.
 ```
 
-## Quick path — one command
+## Quick path — dilute with real English (recommended)
 
-Once the tools are on PATH (`conda activate vosklm`), the whole loop is a
-single script. Re-run it any time with different parameters to retune:
+Rebuilding the LM from a small filler-only corpus destroys general recognition
+(the model forgets normal words). The fix is to make a **large, ordinary
+English corpus dominate** and add fillers only as a light garnish. Two steps,
+both re-runnable:
 
 ```bash
-./scripts/lm-adapt/build-filler-model.sh              # gentle: 6000 lines, 1 filler/sentence
-./scripts/lm-adapt/build-filler-model.sh 6000 3       # denser: higher recall, more over-counting
+conda activate vosklm                          # tools on PATH
+
+./scripts/lm-adapt/fetch-generic-corpus.sh     # once: grab ~900k English sentences (Tatoeba)
+
+./scripts/lm-adapt/build-filler-model.sh       # build: 50k lines, 12% filler rate
 ```
 
-It generates the corpus, fetches + extracts a fresh base model (cached after
-the first download), rebuilds the language model, and writes
+`build-filler-model.sh` mixes the corpus, fetches + extracts a fresh base model
+(cached), rebuilds the language model, and writes
 `public/models/vosk-model-small-en-us-0.15-fillers.tar.gz`. Reload the app and
-pick "Vosk small (en-US, filler-tuned)" to compare. The second argument
-(`MAX_FILLERS`) is the balance knob — lower = fewer phantom fillers.
+pick "Vosk small (en-US, filler-tuned)" to compare.
 
-The manual steps below are the same thing broken apart, for reference.
+Retune with the **filler rate** — the fraction of sentences that get a filler:
+
+```bash
+./scripts/lm-adapt/build-filler-model.sh '' 0.06   # lighter — fewer phantom fillers
+./scripts/lm-adapt/build-filler-model.sh '' 0.20   # heavier — more recall
+```
+
+(`''` keeps the default corpus. You can also pass your own plain-text file as
+the first argument instead of using Tatoeba.)
+
+The manual steps below are the underlying pieces, for reference. The older
+`generate-corpus.mjs` (pure synthetic templates) is kept but is NOT recommended
+on its own — it's what caused the "forgot English" problem.
 
 ## Steps (run locally)
 
