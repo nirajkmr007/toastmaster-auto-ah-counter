@@ -62,18 +62,19 @@ export const MODELS: ModelInfo[] = [
 
   // Filler-tuned model — same acoustic model as the default, but with a
   // language model re-weighted toward um/uh/er/ah. Build it offline first
-  // (see scripts/lm-adapt/README.md), then uncomment.
-  // {
-  //   id: 'vosk-small-en-us-fillers',
-  //   name: 'Vosk small (en-US, filler-tuned)',
-  //   language: 'en-US',
-  //   approxSizeMB: 40,
-  //   description:
-  //     'Default model with its LM rebuilt to favour fillers. Self-hosted — ' +
-  //     'build via scripts/lm-adapt.',
-  //   url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-us-0.15-fillers.tar.gz`,
-  //   engineType: 'vosk',
-  // },
+  // (see scripts/lm-adapt/README.md). NOTE: the .tar.gz is git-ignored, so this
+  // works locally but 404s on the deployed site unless you also ship the model.
+  {
+    id: 'vosk-small-en-us-fillers',
+    name: 'Vosk small (en-US, filler-tuned)',
+    language: 'en-US',
+    approxSizeMB: 40,
+    description:
+      'Default model with its LM rebuilt to favour fillers. Self-hosted — ' +
+      'build via scripts/lm-adapt.',
+    url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-us-0.15-fillers.tar.gz`,
+    engineType: 'vosk',
+  },
 
   {
     id: 'crisperwhisper',
