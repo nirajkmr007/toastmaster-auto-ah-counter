@@ -157,6 +157,15 @@ If you already have a `.tar.gz` served with CORS enabled somewhere (your own
 CDN, a HuggingFace repo that hosts tarballs, etc.), just point `url:` at it.
 The app will fetch on first Start.
 
+### 3. Filler-tuned model (LM adaptation)
+
+To make the default model catch `um`/`uh`/`er`/`ah` more aggressively, you can
+rebuild its language model (not the acoustic model) so those tokens get higher
+probability. This is an offline job requiring the Kaldi toolchain — see
+[`scripts/lm-adapt/README.md`](scripts/lm-adapt/README.md) for the corpus
+generator, the rebuild script, and the exact commands. It's reversible and
+ships behind a commented catalog entry you enable after building.
+
 ## Adding a new STT engine (pluggable architecture)
 
 The Vosk-specific code is isolated behind the
