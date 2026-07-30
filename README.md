@@ -19,30 +19,31 @@ Chrome or Edge, allow microphone access when prompted. First load fetches the
   accumulates their own counts, transcript, and speaking time; the end-of-
   session report has a section per speaker. (A multi-device sync mode is
   parked — see roadmap.)
-- **Pluggable STT.** Everything above the recognizer talks to a single
-  `SttEngine` interface. Default is Vosk-Browser in a Web Worker (~200 ms
-  streaming, keeps disfluencies — Whisper drops them). CrisperWhisper is
-  available as a heavier, more accurate second engine (see "Choosing a
-  model").
-- **Filler detection.** Configurable word lists (sound fillers + crutch
-  phrases), with sound-filler variants canonicalized to one label, a rule
-  layer for context-sensitive words (`so` at utterance start, `like` unless a
-  verb/simile/infinitive), and a rolling frequency threshold. Per-word
-  sensitivity: Extra strict / Strict / Balanced / Loose. The operator can also
-  add missed fillers manually.
-- **UI.** Left pane: animated filler bubbles for the active speaker + manual-
-  add buttons. Right pane: streaming transcript. Both panes scroll
-  independently. A per-speaker speech timer shows a green/yellow/red signal.
+- **Two recognizers, one model.** A single Vosk model drives two recognizers
+  fed the same audio: **A** (full grammar) produces the transcript and the
+  crutch words (`so`, `like`, `actually`); **B** (grammar restricted to filler
+  sounds + `[unk]`) is a dedicated sound-filler detector for `um/uh/er/ah/hmm`.
+  This sidesteps the recall-vs-precision tuning of a single model — A keeps
+  English quality, B specializes in the hesitations A smooths over. No offline
+  model tuning.
+- **Filler detection.** Sound fillers come straight from recognizer B
+  (canonicalized to one label). Crutch words come from text rules on A's
+  transcript: context rules (`so` at utterance start, `like` unless a
+  verb/simile/infinitive) + a rolling frequency threshold, with per-word
+  sensitivity (Extra strict / Strict / Balanced / Loose). The operator can add
+  or correct any count manually.
+- **UI.** Two boxes. Left: crutch-word bubbles + the streaming transcript.
+  Right: sound-filler bubbles. Each bubble has −/+/× to fix miscounts. A
+  per-speaker speech timer shows a green/yellow/red signal.
 - **Noise cancellation.** Browser-native `noiseSuppression` + `echoCancellation`
-  via `getUserMedia`. RNNoise-WASM only if we hear complaints.
+  via `getUserMedia`.
 
 ## Stack
 
 - Vite + React 19 + TypeScript
 - Zustand — local state (speaker roster + session)
 - Framer Motion — bubble / report animations
-- vosk-browser — default streaming STT with disfluencies preserved
-- @huggingface/transformers — optional CrisperWhisper engine (Web Worker)
+- vosk-browser — streaming STT (two recognizers off one model)
 - html-to-image — PNG export of the session report
 
 ## How your voice becomes a counted filler
@@ -51,39 +52,23 @@ The path from a spoken "um" to a bubble on screen, and who owns each step:
 
 ```mermaid
 flowchart LR
-  A["Capture<br/><small>mic to 16 kHz PCM</small>"] --> B["Acoustic model<br/><small>audio to phonemes</small>"]
-  B --> C["Dictionary<br/><small>phonemes to words</small>"]
-  C --> D["Language model<br/><small>pick best sequence</small>"]
-  D --> E["Transcript<br/><small>words to text</small>"]
-  E --> F["Filler detector<br/><small>flag and count</small>"]
+  MIC["Capture<br/><small>mic to 16 kHz PCM</small>"] --> A["Recognizer A<br/><small>full grammar</small>"]
+  MIC --> B["Recognizer B<br/><small>fillers + [unk]</small>"]
+  A --> T["Transcript"]
+  T --> CR["Crutch words<br/><small>so, like (text rules)</small>"]
+  B --> SF["Sound fillers<br/><small>um, uh, er, ah</small>"]
 
-  subgraph audio [audio]
+  subgraph vosk [one Vosk model, two recognizers]
     A
-  end
-  subgraph vosk [Vosk speech-to-text]
     B
-    C
-    D
-    E
-  end
-  subgraph app [app filler logic]
-    F
   end
 ```
 
-Stages B–E all live inside Vosk — which is why the only place to influence
-filler recognition without retraining is the **language model** (stage D). The
-dictionary (stage C) is why `um`/`uh` can be output at all: a word must be in
-it to ever appear. See
-[`docs/lm-fine-tuning-explained.md`](docs/lm-fine-tuning-explained.md) for the
-tuning details.
-
-**Animated version:** open [`public/pipeline.html`](public/pipeline.html) in a
-browser (double-click the file, or on the live site visit
-`/toastmaster-auto-ah-counter/pipeline.html`) — it steps through each stage
-with the example phrase "so um i think". The animation is JavaScript, so it
-won't play in this README on GitHub; the Mermaid diagram above is the static
-view.
+The same audio is fed to both recognizers. A is a normal transcriber; B has
+its grammar restricted to filler sounds, so it is forced to output a filler or
+`[unk]` — catching the `um`/`uh` that A tends to smooth into real words. Sound
+fillers come only from B; crutch words come only from A's transcript. No
+offline model tuning is involved.
 
 ## Getting started
 
@@ -99,141 +84,24 @@ Then:
 npm run dev
 ```
 
-## Choosing a model
+## Speech recognition (two recognizers)
 
-The **Model** dropdown in the header selects which STT model to use:
+There's one model — the ~40 MB `vosk-model-small-en-us-0.15`, fetched from a
+CDN on first load and browser-cached. It powers two recognizers created from
+`src/audio/voskEngine.ts`:
 
-| ID                  | Engine           | Size    | Notes                                                        |
-| ------------------- | ---------------- | ------- | ------------------------------------------------------------ |
-| `vosk-small-en-us`  | Vosk (streaming) | ~40 MB  | Default. Fast, word-by-word, works everywhere. CDN-hosted.   |
-| `vosk-en-us-lgraph` | Vosk (streaming) | ~128 MB | More accurate English, still word-by-word. Self-hosted.      |
-| `vosk-small-en-in`  | Vosk (streaming) | ~36 MB  | Indian English. Word-by-word. Self-hosted.                   |
-| `crisperwhisper`    | transformers.js  | ~500 MB | Best filler accuracy, but ~6 s batches, not live. Heavy.     |
+- **Recognizer A** — full grammar. Produces the live transcript; the crutch
+  words (`so`, `like`, `actually`, `you know`) are found by text rules in
+  `src/detection/detector.ts`.
+- **Recognizer B** — grammar restricted at runtime to the filler sounds plus
+  `[unk]` (Vosk's `KaldiRecognizer(rate, grammar)`). It can only emit a filler
+  sound or `[unk]`, so it reliably catches the `um`/`uh`/`er`/`ah` that the
+  full model tends to turn into real words.
 
-Everything runs locally — models are fetched once (browser-cached) and audio
-never leaves the tab.
-
-### Why not the 1–2 GB Vosk models?
-
-alphacephei publishes flagship models like `vosk-model-en-us-0.22` (1.8 GB)
-and `vosk-model-en-in-0.5` (1 GB, Indian English). **They can't run in a
-browser** — vosk-browser executes Vosk in WebAssembly, which is limited to
-roughly 2 GB of memory, and these models need several GB at runtime. Loading
-one crashes the tab. `en-us-0.22-lgraph` (128 MB) is a compressed-graph build
-of the flagship model and is the largest that reliably runs client-side —
-that's why it's the "bigger English" option here. Running the full-size
-models would require the server-side architecture we deliberately avoided.
-
-### Self-hosted models (lgraph + Indian English)
-
-The two Vosk upgrades are self-hosted because vosk-browser needs `.tar.gz`
-while alphacephei ships `.zip`. A script handles the conversion:
-
-```bash
-./scripts/fetch-models.sh
-```
-
-It downloads each `.zip`, repacks it to `.tar.gz`, and drops it in
-`public/models/`. `setup.sh` runs it for you on first setup, and the GitHub
-Pages workflow runs it at deploy time — so the models ship in the deployed
-site without bloating the git repo (the tarballs are git-ignored). Requires
-`curl`, `unzip`, and `tar` on PATH.
-
-**CrisperWhisper caveats (it's the accurate-but-heavy option):**
-
-- Whisper isn't a streaming model, so this engine transcribes in ~6-second
-  segments — you'll see the transcript and counters update every few seconds,
-  not word-by-word like Vosk.
-- Large first-load download (~500 MB, cached afterward). Use a good connection
-  the first time.
-- Needs a modern browser. It prefers **WebGPU** and falls back to CPU/WASM
-  (much slower). On GitHub Pages the multi-threaded WASM path is limited
-  because Pages can't send the COOP/COEP headers `SharedArrayBuffer` requires
-  — WebGPU sidesteps that, so a WebGPU-capable browser (recent Chrome/Edge)
-  is strongly recommended.
-- Best used with a **time limit** set, so the model isn't grinding on an
-  open-ended session.
-
-Keep Vosk as the default for live meetings; reach for CrisperWhisper when you
-want the most accurate filler count and can wait for the download.
-
-## Adding a new model
-
-The catalog is [`src/audio/models.ts`](src/audio/models.ts). vosk-browser
-requires a **`.tar.gz`** (not `.zip`) whose root contains the standard Vosk
-Kaldi model directory. Two ways to add one:
-
-### 1. Self-host (recommended, most reliable)
-
-1. Download the `.zip` for the model you want from
-   [alphacephei.com/vosk/models](https://alphacephei.com/vosk/models)
-   (e.g. `vosk-model-small-en-in-0.4.zip`).
-2. Repack as tar.gz — the tarball's root should be the model directory:
-   ```bash
-   unzip vosk-model-small-en-in-0.4.zip
-   tar czf vosk-model-small-en-in-0.4.tar.gz vosk-model-small-en-in-0.4
-   ```
-3. Drop the `.tar.gz` into `public/models/` (create the folder if needed).
-4. Uncomment (or add) the matching entry in `MODELS`:
-   ```ts
-   {
-     id: 'vosk-small-en-in',
-     name: 'Vosk small (en-IN)',
-     language: 'en-IN',
-     approxSizeMB: 40,
-     description: 'Tuned for Indian English pronunciation.',
-     url: `${import.meta.env.BASE_URL}models/vosk-model-small-en-in-0.4.tar.gz`,
-     engineType: 'vosk',
-   }
-   ```
-
-Files under `public/` are copied verbatim into `dist/` at build time and
-served alongside the app. Note that models this size push you against the
-GitHub Pages 1 GB repo limit if you add many.
-
-### 2. External URL
-
-If you already have a `.tar.gz` served with CORS enabled somewhere (your own
-CDN, a HuggingFace repo that hosts tarballs, etc.), just point `url:` at it.
-The app will fetch on first Start.
-
-### 3. Filler-tuned model (LM adaptation)
-
-To make the default model catch `um`/`uh`/`er`/`ah` more aggressively, you can
-rebuild its language model (not the acoustic model) so those tokens get higher
-probability. This is an offline job requiring the Kaldi toolchain — see
-[`scripts/lm-adapt/README.md`](scripts/lm-adapt/README.md) for the corpus
-generator, the rebuild script, and the exact commands. It's reversible and
-ships behind a commented catalog entry you enable after building.
-
-## Adding a new STT engine (pluggable architecture)
-
-The Vosk-specific code is isolated behind the
-[`SttEngine`](src/audio/sttEngine.ts) interface. To plug in a different
-recognizer (e.g., the browser-native Web Speech API, whisper.cpp-WASM,
-CrisperWhisper — anything that keeps disfluencies), do four things:
-
-1. **Implement `SttEngine`** in a new file under `src/audio/`, matching the
-   `loadModel` / `start` / `stop` / `isModelLoaded` contract.
-2. **Add your engine type** to `EngineType` in `src/audio/models.ts`
-   (e.g. `'vosk' | 'web-speech'`).
-3. **Wire the factory** in `src/audio/sttEngine.ts` — add a new branch to
-   `createEngine` that returns your factory.
-4. **List your model(s)** in the `MODELS` catalog with the new `engineType`.
-
-No change is needed anywhere else — the store, UI, timer, detection rules,
-session report, and PNG export all keep working, because they only touch the
-`SttEngine` interface.
-
-**Worked example — the CrisperWhisper engine.** The second engine that ships
-today is a concrete template for the steps above:
-[`src/audio/whisperEngine.ts`](src/audio/whisperEngine.ts) implements
-`SttEngine` on top of transformers.js, with heavy inference pushed into
-[`src/audio/whisperWorker.ts`](src/audio/whisperWorker.ts) (a Web Worker) so
-the UI stays responsive. Because Whisper isn't streaming, the engine buffers
-mic audio and flushes *non-overlapping* ~6 s segments to the worker — the
-non-overlap is deliberate, so a filler caught near a boundary isn't counted
-twice. Copy this file as a starting point for any chunk-based engine.
+Both are fed the same audio. This is why there's no offline model tuning and no
+recall/precision knob to fight: A handles English, B specializes in sounds. The
+filler-sound list (recognizer B's grammar) and the crutch words are both edited
+in the ⚙ **Manage filler words** panel.
 
 ## Deploy (GitHub Pages)
 
@@ -252,32 +120,32 @@ Notes:
 - The subpath is hard-coded in `vite.config.ts` (`base: '/toastmaster-auto-ah-counter/'`
   for `build`; dev stays at `/`). If you rename the repo, update it there.
 - HTTPS is automatic — required, because `getUserMedia` won't work over HTTP.
-- The default Vosk model (~40 MB) is fetched from `ccoreilly.github.io` on
-  first Start. If that origin ever goes down, self-host it: add the `.tar.gz`
-  under `public/models/` (see `scripts/fetch-models.sh`) and point the model's
-  `url` in `src/audio/models.ts` at `${import.meta.env.BASE_URL}models/...`.
+- The Vosk model (~40 MB) is fetched from `ccoreilly.github.io` on first Start.
+  If that origin ever goes down, self-host it: drop the `.tar.gz` under
+  `public/models/` and point `MODEL_URL` in `src/audio/models.ts` at
+  `${import.meta.env.BASE_URL}models/...`.
 
 ## Roadmap
 
 **Built**
+- Two recognizers off one Vosk model: full transcript (A) + restricted
+  sound-filler grammar (B). No offline model tuning.
 - One-mic multi-speaker sessions: add a roster, tap the active speaker, per-
   speaker counts / transcript / speaking time.
-- Vosk streaming STT + rule-based filler detection (position + frequency
-  rules), with sound-filler variants canonicalized to one label.
-- Configurable word lists (Toastmasters Classic, Corporate Speak) and
-  sensitivity: Extra strict / Strict / Balanced / Loose.
-- Manual filler add (operator override for anything the model misses).
+- Sound fillers from recognizer B; crutch words from rule-based text detection
+  on A (context + frequency rules, sensitivity levels).
+- Configurable word lists (⚙ Manage filler words), manual add + −/+/× fixes.
 - Per-speaker speech timer with green/yellow/red signal.
-- Animated per-speaker filler bubbles + independent-scroll streaming
-  transcript.
-- Consolidated end-of-session report (overview + per-speaker sections) with
-  PNG export.
-- Pluggable STT: optional CrisperWhisper engine via transformers.js; larger
-  Vosk models (en-US lgraph, Indian English) via `scripts/fetch-models.sh`.
+- Two-box UI: crutch words + transcript | sound fillers. Consolidated
+  end-of-session report with PNG export.
 
 **Parked**
 - Multi-device mode: each speaker on their own device, synced via Yjs/WebRTC
   (would need a signaling server — trades away the zero-backend property).
 - RNNoise-WASM for stronger noise cancellation.
 - LLM-based crutch classifier for higher crutch-word precision.
-- Distil-Whisper second pass for prettier transcripts.
+
+**Removed in v2 (recoverable from the `v1.0.0` tag)**
+- CrisperWhisper / transformers.js engine.
+- Offline LM-adaptation toolchain (`scripts/lm-adapt/`) and extra Vosk models
+  (lgraph, Indian English). The dual-recognizer design made them unnecessary.

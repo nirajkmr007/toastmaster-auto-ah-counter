@@ -1,31 +1,32 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Roster } from './components/Roster'
 import { Controls } from './components/Controls'
-import { BubblesPane } from './components/BubblesPane'
+import { FillerPane } from './components/FillerPane'
+import { ManualAdd } from './components/ManualAdd'
 import { TranscriptPane } from './components/TranscriptPane'
 import { SessionReport } from './components/SessionReport'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Timer } from './components/Timer'
 import { useSessionStore } from './store'
 import { createDetector, type Detector } from './detection/detector'
-import { createEngine, type SttEngine } from './audio/sttEngine'
-import { getModel } from './audio/models'
+import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
+import { MODEL_URL } from './audio/models'
 import './App.css'
 
 const FREQUENCY_WINDOW_MS = 30_000
 
 function App() {
-  const engineRef = useRef<{ modelId: string; engine: SttEngine } | null>(null)
+  const engineRef = useRef<VoskEngine | null>(null)
   const detectorRef = useRef<Detector | null>(null)
 
   const wordList = useSessionStore((s) => s.wordList)
   const sensitivity = useSessionStore((s) => s.sensitivity)
-  const selectedModelId = useSessionStore((s) => s.selectedModelId)
   const activeSpeakerId = useSessionStore((s) => s.activeSpeakerId)
   const setStatus = useSessionStore((s) => s.setStatus)
   const addTranscriptLine = useSessionStore((s) => s.addTranscriptLine)
   const setPartial = useSessionStore((s) => s.setPartial)
-  const applyDetections = useSessionStore((s) => s.applyDetections)
+  const applyCrutchDetections = useSessionStore((s) => s.applyCrutchDetections)
+  const applySoundDetections = useSessionStore((s) => s.applySoundDetections)
   const resetSessionData = useSessionStore((s) => s.resetSessionData)
   const markSessionStart = useSessionStore((s) => s.markSessionStart)
   const markSessionEnd = useSessionStore((s) => s.markSessionEnd)
@@ -43,34 +44,26 @@ function App() {
     )
   )
 
-  // Lazy-init engine keyed on selected model. Switching models tears down the
-  // old engine so the next Start downloads the new model. Guarded against
-  // StrictMode double-render.
-  if (
-    engineRef.current === null ||
-    engineRef.current.modelId !== selectedModelId
-  ) {
-    if (engineRef.current) void engineRef.current.engine.stop()
-    engineRef.current = {
-      modelId: selectedModelId,
-      engine: createEngine(getModel(selectedModelId)),
-    }
-  }
+  if (!engineRef.current) engineRef.current = createVoskEngine(MODEL_URL)
 
+  // Recognizer A's transcript is scanned for CRUTCH words only — sound fillers
+  // come from recognizer B. So the detector runs with an empty sound list.
   if (!detectorRef.current) {
     detectorRef.current = createDetector({
-      wordList,
+      wordList: { ...wordList, soundFillers: [] },
       sensitivity,
       frequencyWindowMs: FREQUENCY_WINDOW_MS,
     })
   }
 
   useEffect(() => {
-    detectorRef.current?.updateConfig({ wordList, sensitivity })
+    detectorRef.current?.updateConfig({
+      wordList: { ...wordList, soundFillers: [] },
+      sensitivity,
+    })
   }, [wordList, sensitivity])
 
-  // Reset the detector's rolling frequency window when the active speaker
-  // changes, so one speaker's "so so so" doesn't prime another's threshold.
+  // Reset the rolling frequency window when the active speaker changes.
   useEffect(() => {
     detectorRef.current?.reset()
   }, [activeSpeakerId])
@@ -78,22 +71,18 @@ function App() {
   useEffect(() => {
     return () => {
       if (engineRef.current) {
-        void engineRef.current.engine.stop()
+        void engineRef.current.stop()
         engineRef.current = null
       }
     }
   }, [])
 
   const handleStart = useCallback(async () => {
-    const entry = engineRef.current
+    const engine = engineRef.current
     const detector = detectorRef.current
-    if (!entry || !detector) return
+    if (!engine || !detector) return
     if (useSessionStore.getState().speakers.length === 0) return
-    const engine = entry.engine
 
-    // NOTE: we intentionally do NOT clear speaker data here. Start resumes the
-    // meeting so stopping between speakers (and starting again) keeps everyone's
-    // counts. A fresh meeting is started with the "New session" button.
     detector.reset()
     setStatus('loading-model')
 
@@ -103,18 +92,24 @@ function App() {
       }
       setLoadingMessage(null)
 
-      await engine.start({
-        onFinal: (text) => {
-          addTranscriptLine(text)
-          const detections = detector.process(text, Date.now())
-          if (detections.length > 0) applyDetections(detections)
+      const soundGrammar = useSessionStore.getState().wordList.soundFillers
+
+      await engine.start(
+        {
+          onTranscriptFinal: (text) => {
+            addTranscriptLine(text)
+            const dets = detector.process(text, Date.now())
+            if (dets.length > 0) applyCrutchDetections(dets)
+          },
+          onTranscriptPartial: (text) => setPartial(text),
+          onSound: (words) => applySoundDetections(words),
+          onError: (err) => {
+            const msg = err instanceof Error ? err.message : String(err)
+            setStatus('error', msg)
+          },
         },
-        onPartial: (text) => setPartial(text),
-        onError: (err) => {
-          const msg = err instanceof Error ? err.message : String(err)
-          setStatus('error', msg)
-        },
-      })
+        soundGrammar
+      )
       markSessionStart()
       setStatus('listening')
     } catch (err) {
@@ -126,7 +121,8 @@ function App() {
     setStatus,
     addTranscriptLine,
     setPartial,
-    applyDetections,
+    applyCrutchDetections,
+    applySoundDetections,
     markSessionStart,
     setLoadingMessage,
   ])
@@ -136,9 +132,9 @@ function App() {
   }, [resetSessionData])
 
   const handleStop = useCallback(async () => {
-    const entry = engineRef.current
-    if (!entry) return
-    await entry.engine.stop()
+    const engine = engineRef.current
+    if (!engine) return
+    await engine.stop()
     markSessionEnd()
     setStatus('ready')
     const { speakers } = useSessionStore.getState()
@@ -154,17 +150,11 @@ function App() {
     const payload = {
       preset: s.presetName,
       sensitivity: s.sensitivity,
-      model: s.selectedModelId,
       speakers: s.speakers.map((sp) => ({
         name: sp.name,
-        counts: sp.counts,
+        soundCounts: sp.soundCounts,
+        crutchCounts: sp.crutchCounts,
         speakingSec: Math.round(sp.speakingMs / 1000),
-        detections: sp.detectionLog.map((d) => ({
-          word: d.word,
-          context: d.context,
-          manual: d.manual ?? false,
-          timestamp: d.timestamp,
-        })),
         transcript: sp.transcript.map((t) => t.text),
       })),
     }
@@ -177,8 +167,6 @@ function App() {
       console.log('[ah-counter session log]', payload, err)
     }
   }, [])
-
-  const modelName = getModel(selectedModelId).name
 
   return (
     <div className="app">
@@ -201,20 +189,24 @@ function App() {
             </button>
           </div>
         </div>
-        <Roster />
-        <div className="header-controls">
+        <div className="setup-row">
+          <Roster />
           <Controls onStart={handleStart} onStop={handleStop} />
         </div>
       </header>
 
       <main className="app-main">
-        <BubblesPane />
+        <div className="fillers-col">
+          <FillerPane kind="crutch" />
+          <FillerPane kind="sound" />
+          <ManualAdd />
+        </div>
         <TranscriptPane />
       </main>
 
       <footer className="app-footer">
         <span className="dim">
-          Model: {modelName} · session-only, nothing is stored
+          Two Vosk recognizers · session-only, nothing is stored
         </span>
         <div className="footer-actions">
           {hasEndedSession ? (

@@ -1,6 +1,5 @@
 import { useSessionStore } from '../store'
 import type { Sensitivity } from '../detection/detector'
-import { MODELS } from '../audio/models'
 
 interface ControlsProps {
   onStart: () => void
@@ -41,8 +40,6 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   const loadingMessage = useSessionStore((s) => s.loadingMessage)
   const targetDurationMs = useSessionStore((s) => s.targetDurationMs)
   const setTargetDuration = useSessionStore((s) => s.setTargetDuration)
-  const selectedModelId = useSessionStore((s) => s.selectedModelId)
-  const setSelectedModel = useSessionStore((s) => s.setSelectedModel)
 
   const canStart = status === 'idle' || status === 'ready'
   const isBusy = status === 'loading-model'
@@ -52,23 +49,6 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   return (
     <div className="controls">
       <div className="controls-row">
-        <div className="select-group">
-          <label htmlFor="model">Model</label>
-          <select
-            id="model"
-            value={selectedModelId}
-            onChange={(e) => setSelectedModel(e.target.value)}
-            disabled={isRunning || isBusy}
-            title="Speech recognition model. Larger = more accurate, longer first-load download."
-          >
-            {MODELS.map((m) => (
-              <option key={m.id} value={m.id} title={m.description}>
-                {m.name} · {m.approxSizeMB} MB
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div className="select-group">
           <label htmlFor="sensitivity">Sensitivity</label>
           <select

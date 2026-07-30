@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSessionStore } from '../store'
+import { useSessionStore, speakerTotal } from '../store'
 
 // Speaker roster: add names one by one, see each speaker's running filler
 // total, and switch who's currently speaking. The active speaker receives all
@@ -24,8 +24,7 @@ export function Roster() {
 
   const total = (id: string) => {
     const sp = speakers.find((s) => s.id === id)
-    if (!sp) return 0
-    return Object.values(sp.counts).reduce((a, b) => a + b, 0)
+    return sp ? speakerTotal(sp) : 0
   }
 
   return (

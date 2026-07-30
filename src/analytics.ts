@@ -13,8 +13,10 @@ export interface SpeakerReport {
   id: string
   name: string
   totalFillers: number
+  soundTotal: number
+  crutchTotal: number
   manualCount: number
-  perWord: WordCount[] // desc by count
+  perWord: WordCount[] // desc by count, both kinds merged
   topCrutch: string | null
   speakingSec: number
   wordsSpoken: number
@@ -42,8 +44,13 @@ function round1(n: number): number {
 }
 
 export function computeSpeakerReport(sp: Speaker): SpeakerReport {
-  const totalFillers = Object.values(sp.counts).reduce((a, b) => a + b, 0)
-  const perWord = Object.entries(sp.counts)
+  const sum = (m: Record<string, number>) => Object.values(m).reduce((a, b) => a + b, 0)
+  const soundTotal = sum(sp.soundCounts)
+  const crutchTotal = sum(sp.crutchCounts)
+  const totalFillers = soundTotal + crutchTotal
+  // sound and crutch keys are disjoint, so merging is safe.
+  const merged = { ...sp.soundCounts, ...sp.crutchCounts }
+  const perWord = Object.entries(merged)
     .map(([word, count]) => ({ word, count }))
     .sort((a, b) => b.count - a.count)
   const topCrutch = perWord[0]?.word ?? null
@@ -61,6 +68,8 @@ export function computeSpeakerReport(sp: Speaker): SpeakerReport {
     id: sp.id,
     name: sp.name,
     totalFillers,
+    soundTotal,
+    crutchTotal,
     manualCount,
     perWord,
     topCrutch,

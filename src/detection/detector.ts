@@ -29,12 +29,15 @@ export interface DetectorConfig {
   frequencyWindowMs: number
 }
 
+export type FillerKind = 'sound' | 'crutch'
+
 export interface Detection {
   id: string
   word: string
   timestamp: number
   context: string
   manual?: boolean // true when added by the operator, not the model
+  kind?: FillerKind // 'sound' (from recognizer B) or 'crutch' (from transcript rules)
 }
 
 // Single source of truth for sound fillers. Vosk transcribes drawn-out
@@ -62,21 +65,31 @@ export function canonicalFiller(word: string): string {
   return FILLER_CANONICAL[word.toLowerCase().trim()] ?? word.toLowerCase().trim()
 }
 
-// The deduplicated set of words to offer as manual-add buttons for a word list:
-// canonical sound fillers first, then crutch words, then phrases.
-export function manualAddWords(wordList: WordList): string[] {
+// Manual-add buttons for the SOUND box: canonical sound fillers (um, uh, …),
+// deduplicated. These are also recognizer B's grammar.
+export function soundAddWords(wordList: WordList): string[] {
   const seen = new Set<string>()
   const out: string[] = []
-  const push = (w: string) => {
+  for (const w of wordList.soundFillers.map(canonicalFiller)) {
+    if (w && !seen.has(w)) {
+      seen.add(w)
+      out.push(w)
+    }
+  }
+  return out
+}
+
+// Manual-add buttons for the CRUTCH/WORDS box: crutch words then phrases.
+export function crutchAddWords(wordList: WordList): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const w of [...wordList.crutchWords, ...wordList.crutchPhrases]) {
     const k = w.toLowerCase().trim()
     if (k && !seen.has(k)) {
       seen.add(k)
       out.push(k)
     }
   }
-  wordList.soundFillers.map(canonicalFiller).forEach(push)
-  wordList.crutchWords.forEach(push)
-  wordList.crutchPhrases.forEach(push)
   return out
 }
 

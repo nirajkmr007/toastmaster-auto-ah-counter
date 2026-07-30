@@ -158,7 +158,8 @@ function SpeakerSection({ report }: { report: SpeakerReport }) {
       <div className="report-speaker-head">
         <span className="report-speaker-name">{report.name}</span>
         <span className="report-speaker-stats">
-          {report.totalFillers} total · {report.fillersPerMin}/min ·{' '}
+          {report.totalFillers} total ({report.soundTotal} sound ·{' '}
+          {report.crutchTotal} words) · {report.fillersPerMin}/min ·{' '}
           {formatDuration(report.speakingSec)}
           {report.manualCount > 0 ? ` · ${report.manualCount} manual` : ''}
         </span>

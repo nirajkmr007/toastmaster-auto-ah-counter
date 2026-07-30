@@ -112,6 +112,21 @@
   gap: 16px;
 }
 
+/* Roster + sensitivity/speech-length/start on one row (desktop); wraps on
+   narrow screens. */
+.setup-row {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+.setup-row > .roster {
+  flex: 1 1 300px;
+}
+.setup-row > .controls {
+  flex: 1 1 auto;
+}
+
 /* ---- controls ---- */
 .controls {
   display: flex;
@@ -208,15 +223,30 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 3fr 4fr;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 @media (max-width: 900px) {
   .app-main {
     grid-template-columns: 1fr;
-    /* On narrow screens let the page scroll instead of squashing panes. */
     min-height: 0;
   }
+}
+
+/* Left column: crutch words + sound fillers stacked, with one shared manual-add
+   card at the bottom. Transcript sits alone in the right column. */
+.fillers-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
+.fillers-col > .filler-pane {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.fillers-col > .manual-add {
+  flex: none;
 }
 
 .pane {
@@ -804,11 +834,13 @@
 }
 .manual-add {
   flex: none;
-  border-top: 1px dashed var(--border);
-  padding-top: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 .manual-add-label {
   font-size: 11px;
@@ -818,6 +850,19 @@
 }
 .manual-add-label strong {
   color: var(--text-h);
+}
+.manual-add-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.manual-add-kind {
+  flex: none;
+  width: 54px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
 }
 .manual-add-buttons {
   display: flex;

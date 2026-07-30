@@ -10,7 +10,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.2.0",
     "framer-motion": "^12.42.2",
     "html-to-image": "^1.11.13",
     "react": "^19.2.7",
