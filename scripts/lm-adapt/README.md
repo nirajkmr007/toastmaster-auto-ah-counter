@@ -124,6 +124,24 @@ cd /work
 # ...then run the corpus + rebuild steps below; public/models/ is on your host.
 ```
 
+## Quick path — one command
+
+Once the tools are on PATH (`conda activate vosklm`), the whole loop is a
+single script. Re-run it any time with different parameters to retune:
+
+```bash
+./scripts/lm-adapt/build-filler-model.sh              # gentle: 6000 lines, 1 filler/sentence
+./scripts/lm-adapt/build-filler-model.sh 6000 3       # denser: higher recall, more over-counting
+```
+
+It generates the corpus, fetches + extracts a fresh base model (cached after
+the first download), rebuilds the language model, and writes
+`public/models/vosk-model-small-en-us-0.15-fillers.tar.gz`. Reload the app and
+pick "Vosk small (en-US, filler-tuned)" to compare. The second argument
+(`MAX_FILLERS`) is the balance knob — lower = fewer phantom fillers.
+
+The manual steps below are the same thing broken apart, for reference.
+
 ## Steps (run locally)
 
 From the repo root:
