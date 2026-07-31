@@ -47,7 +47,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   const canPressStart = canStart && speakerCount > 0
 
   return (
-    <div className="controls">
+    <div className="controls" data-tour="controls">
       <div className="controls-row">
         <div className="select-group">
           <label htmlFor="sensitivity">Sensitivity</label>

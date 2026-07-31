@@ -48,6 +48,7 @@ export interface SessionState {
   sessionEndAt: number | null
   showReport: boolean
   showSettings: boolean
+  showTour: boolean
 
   targetDurationMs: number | null
   loadingMessage: string | null
@@ -62,6 +63,8 @@ export interface SessionState {
   removeFiller: (word: string) => void
   openSettings: () => void
   closeSettings: () => void
+  openTour: () => void
+  closeTour: () => void
 
   addSpeaker: (name: string) => void
   removeSpeaker: (id: string) => void
@@ -134,6 +137,7 @@ export const useSessionStore = create<SessionState>()(
       sessionEndAt: null,
       showReport: false,
       showSettings: false,
+      showTour: false,
 
       targetDurationMs: null,
       loadingMessage: null,
@@ -179,6 +183,8 @@ export const useSessionStore = create<SessionState>()(
 
       openSettings: () => set({ showSettings: true }),
       closeSettings: () => set({ showSettings: false }),
+      openTour: () => set({ showTour: true }),
+      closeTour: () => set({ showTour: false }),
 
       addSpeaker: (name) =>
         set((state) => {

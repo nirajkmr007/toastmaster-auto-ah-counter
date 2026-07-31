@@ -35,7 +35,7 @@ export function TranscriptPane() {
   }, [transcript, partialText])
 
   return (
-    <div className="pane transcript-pane">
+    <div className="pane transcript-pane" data-tour="transcript">
       <div className="pane-header">
         <h2>Transcript</h2>
         {active ? <span className="speaker-tag">{active.name}</span> : null}

@@ -31,7 +31,7 @@ export function ManualAdd() {
   }
 
   return (
-    <div className="manual-add">
+    <div className="manual-add" data-tour="manual">
       <div className="manual-add-label">
         Tap to add for <strong>{active.name}</strong>
       </div>

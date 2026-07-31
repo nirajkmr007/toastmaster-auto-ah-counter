@@ -7,6 +7,7 @@ import { TranscriptPane } from './components/TranscriptPane'
 import { SessionReport } from './components/SessionReport'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Timer } from './components/Timer'
+import { Tour, TOUR_SEEN_KEY } from './components/Tour'
 import { useSessionStore } from './store'
 import { createDetector, type Detector } from './detection/detector'
 import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
@@ -32,6 +33,7 @@ function App() {
   const openReport = useSessionStore((s) => s.openReport)
   const setLoadingMessage = useSessionStore((s) => s.setLoadingMessage)
   const openSettings = useSessionStore((s) => s.openSettings)
+  const openTour = useSessionStore((s) => s.openTour)
   const status = useSessionStore((s) => s.status)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
   const hasData = useSessionStore((s) =>
@@ -75,6 +77,17 @@ function App() {
       }
     }
   }, [])
+
+  // Auto-open the guided tour on a visitor's first landing.
+  useEffect(() => {
+    let seen = false
+    try {
+      seen = localStorage.getItem(TOUR_SEEN_KEY) === '1'
+    } catch {
+      // ignore
+    }
+    if (!seen) openTour()
+  }, [openTour])
 
   const handleStart = useCallback(async () => {
     const engine = engineRef.current
@@ -178,6 +191,16 @@ function App() {
             <button
               type="button"
               className="gear-btn"
+              onClick={openTour}
+              aria-label="Take the app tour"
+              title="Take the app tour"
+            >
+              ?
+            </button>
+            <button
+              type="button"
+              className="gear-btn"
+              data-tour="settings"
               onClick={openSettings}
               aria-label="Manage filler words"
               title="Manage filler words"
@@ -201,7 +224,7 @@ function App() {
         <TranscriptPane />
       </main>
 
-      <footer className="app-footer">
+      <footer className="app-footer" data-tour="footer">
         <span className="dim">
           Two Vosk recognizers · session-only, nothing is stored
         </span>
@@ -239,6 +262,7 @@ function App() {
 
       <SessionReport />
       <SettingsPanel />
+      <Tour />
     </div>
   )
 }

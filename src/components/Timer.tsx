@@ -51,7 +51,7 @@ export function Timer() {
     .join(' ')
 
   return (
-    <div className={classes} aria-live="polite">
+    <div className={classes} data-tour="timer" aria-live="polite">
       <span className="timer-dot" aria-hidden />
       <span className="timer-elapsed">{formatTime(elapsedMs)}</span>
       {target != null ? (

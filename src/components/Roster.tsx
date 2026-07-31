@@ -28,7 +28,7 @@ export function Roster() {
   }
 
   return (
-    <div className="roster">
+    <div className="roster" data-tour="speakers">
       <div className="roster-add">
         <span className="label">
           Speakers <span className="required" aria-hidden="true">*</span>

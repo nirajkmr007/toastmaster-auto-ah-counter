@@ -36,7 +36,7 @@ export function FillerPane({ kind }: FillerPaneProps) {
 
   if (!active) {
     return (
-      <div className="pane filler-pane">
+      <div className="pane filler-pane" data-tour={kind}>
         <div className="pane-header">
           <h2>{title}</h2>
         </div>
@@ -48,7 +48,7 @@ export function FillerPane({ kind }: FillerPaneProps) {
   }
 
   return (
-    <div className="pane filler-pane">
+    <div className="pane filler-pane" data-tour={kind}>
       <div className="pane-header">
         <h2>{title}</h2>
         <div className="total-counter">
