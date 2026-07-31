@@ -19,6 +19,7 @@ const FREQUENCY_WINDOW_MS = 30_000
 function App() {
   const engineRef = useRef<VoskEngine | null>(null)
   const detectorRef = useRef<Detector | null>(null)
+  const runStartRef = useRef<number | null>(null)
 
   const wordList = useSessionStore((s) => s.wordList)
   const sensitivity = useSessionStore((s) => s.sensitivity)
@@ -35,6 +36,7 @@ function App() {
   const openSettings = useSessionStore((s) => s.openSettings)
   const openTour = useSessionStore((s) => s.openTour)
   const status = useSessionStore((s) => s.status)
+  const hardStopMs = useSessionStore((s) => s.hardStopMs)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
   const hasData = useSessionStore((s) =>
     s.speakers.some(
@@ -122,6 +124,7 @@ function App() {
         soundGrammar
       )
       markSessionStart()
+      runStartRef.current = Date.now()
       setStatus('listening')
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -144,6 +147,7 @@ function App() {
   const handleStop = useCallback(async () => {
     const engine = engineRef.current
     if (!engine) return
+    runStartRef.current = null
     await engine.stop()
     markSessionEnd()
     setStatus('ready')
@@ -153,6 +157,18 @@ function App() {
     )
     if (anyData) openReport()
   }, [setStatus, markSessionEnd, openReport])
+
+  // Safety cap: auto-stop after the hard-stop duration so a session left open
+  // by mistake doesn't record indefinitely.
+  useEffect(() => {
+    if (status !== 'listening') return
+    const id = window.setInterval(() => {
+      if (runStartRef.current != null && Date.now() - runStartRef.current >= hardStopMs) {
+        void handleStop()
+      }
+    }, 1000)
+    return () => window.clearInterval(id)
+  }, [status, hardStopMs, handleStop])
 
   const [copyState, setCopyState] = useState<'idle' | 'copied'>('idle')
   const handleCopyLog = useCallback(async () => {

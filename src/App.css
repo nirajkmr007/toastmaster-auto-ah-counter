@@ -169,6 +169,42 @@
   cursor: not-allowed;
 }
 
+/* Speech-length slider */
+.slider-group {
+  min-width: 190px;
+}
+.slider-value {
+  font-family: var(--mono);
+  color: var(--text-h);
+  margin-left: 4px;
+}
+.slider-group input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+  margin-top: 12px;
+}
+.slider-group input[type='range']:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Settings modal select (auto-stop) */
+.settings-select {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: var(--text-h);
+  cursor: pointer;
+  outline: none;
+  align-self: flex-start;
+}
+.settings-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
 .btn {
   padding: 12px 22px;
   border-radius: 8px;

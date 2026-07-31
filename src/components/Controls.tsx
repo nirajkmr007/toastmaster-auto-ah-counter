@@ -21,15 +21,12 @@ const SENSITIVITY_LABELS: Record<Sensitivity, string> = {
   loose: 'Loose',
 }
 
-// Common Toastmasters durations. Values are in milliseconds; null = no limit.
-const TIME_LIMIT_OPTIONS: { label: string; ms: number | null }[] = [
-  { label: 'No limit', ms: null },
-  { label: '1 min', ms: 60_000 },
-  { label: '2 min', ms: 120_000 },
-  { label: '3 min', ms: 180_000 },
-  { label: '5 min', ms: 300_000 },
-  { label: '7 min', ms: 420_000 },
-]
+function formatMs(ms: number): string {
+  const total = Math.round(ms / 1000)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+}
 
 export function Controls({ onStart, onStop }: ControlsProps) {
   const status = useSessionStore((s) => s.status)
@@ -40,6 +37,7 @@ export function Controls({ onStart, onStop }: ControlsProps) {
   const loadingMessage = useSessionStore((s) => s.loadingMessage)
   const targetDurationMs = useSessionStore((s) => s.targetDurationMs)
   const setTargetDuration = useSessionStore((s) => s.setTargetDuration)
+  const hardStopMs = useSessionStore((s) => s.hardStopMs)
 
   const canStart = status === 'idle' || status === 'ready'
   const isBusy = status === 'loading-model'
@@ -65,28 +63,27 @@ export function Controls({ onStart, onStop }: ControlsProps) {
           </select>
         </div>
 
-        <div className="select-group">
-          <label htmlFor="time-limit">Speech length</label>
-          <select
-            id="time-limit"
-            value={targetDurationMs === null ? 'none' : String(targetDurationMs)}
-            onChange={(e) =>
-              setTargetDuration(
-                e.target.value === 'none' ? null : Number(e.target.value)
-              )
-            }
+        <div className="select-group slider-group">
+          <label htmlFor="speech-length">
+            Speech length{' '}
+            <span className="slider-value">
+              {targetDurationMs ? formatMs(targetDurationMs) : 'off'}
+            </span>
+          </label>
+          <input
+            type="range"
+            id="speech-length"
+            min={0}
+            max={hardStopMs}
+            step={30_000}
+            value={targetDurationMs ?? 0}
+            onChange={(e) => {
+              const v = Number(e.target.value)
+              setTargetDuration(v === 0 ? null : v)
+            }}
             disabled={isRunning || isBusy}
-            title="Per-speech time guide — drives the green/yellow/red signal"
-          >
-            {TIME_LIMIT_OPTIONS.map((opt) => (
-              <option
-                key={opt.label}
-                value={opt.ms === null ? 'none' : String(opt.ms)}
-              >
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            title="Per-speech time guide — drives the green/yellow/red signal. Max is the hard stop."
+          />
         </div>
 
         {isRunning ? (

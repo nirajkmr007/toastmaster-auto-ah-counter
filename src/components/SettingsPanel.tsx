@@ -16,6 +16,8 @@ export function SettingsPanel() {
   const addFiller = useSessionStore((s) => s.addFiller)
   const removeFiller = useSessionStore((s) => s.removeFiller)
   const setPreset = useSessionStore((s) => s.setPreset)
+  const hardStopMs = useSessionStore((s) => s.hardStopMs)
+  const setHardStop = useSessionStore((s) => s.setHardStop)
 
   const [soundInput, setSoundInput] = useState('')
   const [wordInput, setWordInput] = useState('')
@@ -89,6 +91,28 @@ export function SettingsPanel() {
               Changes apply live and are saved on this device. Sounds are
               always counted; words &amp; phrases follow the sensitivity rules.
             </p>
+
+            <div className="settings-group">
+              <div className="settings-group-head">
+                <span className="settings-group-title">Auto-stop</span>
+                <span className="settings-group-sub dim">
+                  Safety cap — listening ends automatically after this long, so
+                  a session left open never records indefinitely.
+                </span>
+              </div>
+              <select
+                className="settings-select"
+                value={String(hardStopMs)}
+                onChange={(e) => setHardStop(Number(e.target.value))}
+                aria-label="Auto-stop listening after"
+              >
+                {[10, 15, 20, 30, 45, 60, 90, 120].map((min) => (
+                  <option key={min} value={String(min * 60_000)}>
+                    {min} min
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <FillerGroup
               title="Sounds"

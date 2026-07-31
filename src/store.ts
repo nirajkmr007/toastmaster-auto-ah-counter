@@ -51,12 +51,14 @@ export interface SessionState {
   showTour: boolean
 
   targetDurationMs: number | null
+  hardStopMs: number // safety cap: auto-stop listening after this long
   loadingMessage: string | null
 
   setStatus: (status: EngineStatus, errorMessage?: string | null) => void
   setSensitivity: (s: Sensitivity) => void
   setPreset: (name: string, list: WordList) => void
   setTargetDuration: (ms: number | null) => void
+  setHardStop: (ms: number) => void
   setLoadingMessage: (msg: string | null) => void
 
   addFiller: (word: string, group: FillerGroup) => void
@@ -140,12 +142,23 @@ export const useSessionStore = create<SessionState>()(
       showTour: false,
 
       targetDurationMs: null,
+      hardStopMs: 30 * 60_000, // 30 minutes
       loadingMessage: null,
 
       setStatus: (status, errorMessage = null) => set({ status, errorMessage }),
       setSensitivity: (sensitivity) => set({ sensitivity }),
       setPreset: (presetName, wordList) => set({ presetName, wordList }),
       setTargetDuration: (ms) => set({ targetDurationMs: ms }),
+      // Changing the hard stop clamps the per-speech length so it can never
+      // exceed the cap.
+      setHardStop: (ms) =>
+        set((state) => ({
+          hardStopMs: ms,
+          targetDurationMs:
+            state.targetDurationMs != null
+              ? Math.min(state.targetDurationMs, ms)
+              : null,
+        })),
       setLoadingMessage: (loadingMessage) => set({ loadingMessage }),
 
       addFiller: (raw, group) =>
@@ -393,6 +406,7 @@ export const useSessionStore = create<SessionState>()(
         presetName: s.presetName,
         sensitivity: s.sensitivity,
         targetDurationMs: s.targetDurationMs,
+        hardStopMs: s.hardStopMs,
       }),
     }
   )
