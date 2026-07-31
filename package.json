@@ -1,8 +1,15 @@
 {
   "name": "toastmaster-auto-ah-counter",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
+  "description": "Browser-only, live Toastmasters ah-counter: two Vosk recognizers count filler sounds (um/uh) and crutch words (so/like) per speaker. No backend, nothing stored.",
+  "license": "MIT",
+  "homepage": "https://nirajkmr007.github.io/toastmaster-auto-ah-counter/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nirajkmr007/toastmaster-auto-ah-counter.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

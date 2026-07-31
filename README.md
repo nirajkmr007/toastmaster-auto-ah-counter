@@ -72,17 +72,18 @@ offline model tuning is involved.
 
 ## Getting started
 
-First-time setup (installs Node 22 via Homebrew/apt if missing, then `npm install`):
+Requires Node.js 20+ and a Chromium browser (mic access). Then:
 
 ```bash
-./setup.sh
+npm install
+npm run dev        # http://localhost:5173
 ```
 
-Then:
+`./setup.sh` is an optional helper that installs Node via Homebrew/apt if you
+don't already have it, then runs `npm install`.
 
-```bash
-npm run dev
-```
+Useful scripts: `npm run build` (type-check + production build), `npm run
+preview` (serve the build), `npm run lint` (oxlint).
 
 ## Speech recognition (two recognizers)
 
@@ -149,3 +150,13 @@ Notes:
 - CrisperWhisper / transformers.js engine.
 - Offline LM-adaptation toolchain (`scripts/lm-adapt/`) and extra Vosk models
   (lgraph, Indian English). The dual-recognizer design made them unnecessary.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, scripts, project structure,
+and the mental model of the two-recognizer design. Short version: Node 20+,
+`npm install`, `npm run dev`; keep it backend-free and session-only.
+
+## License
+
+[MIT](LICENSE).
