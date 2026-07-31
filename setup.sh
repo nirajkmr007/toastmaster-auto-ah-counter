@@ -53,13 +53,10 @@ install_node_macos() {
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     ensure_brew_on_path
   fi
-  log "Installing Node LTS via Homebrew…"
-  brew install node@22
-  local prefix
-  prefix="$(brew --prefix node@22)"
-  export PATH="$prefix/bin:$PATH"
-  warn "node@22 is keg-only. Add this line to your ~/.zshrc so future shells find node:"
-  printf '  export PATH="%s/bin:$PATH"\n' "$prefix"
+  log "Installing Node via Homebrew…"
+  # Unversioned `node` is auto-linked into Homebrew's bin (no manual PATH edit,
+  # unlike the keg-only node@NN formulae). Current Node satisfies the >=20 need.
+  brew install node
 }
 
 install_node_linux() {
@@ -96,5 +93,6 @@ npm install --no-audit --no-fund
 
 # The single Vosk model streams from a CDN on first Start — nothing to fetch.
 
-log "Done. Start the dev server with:"
-printf "  npm run dev\n"
+log "Setup complete. Everything's installed."
+log "Start the app with:"
+printf "  npm run dev        # then open http://localhost:5173\n"
