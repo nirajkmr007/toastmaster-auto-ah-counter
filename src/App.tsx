@@ -23,9 +23,8 @@ function App() {
   const sensitivity = useSessionStore((s) => s.sensitivity)
   const activeSpeakerId = useSessionStore((s) => s.activeSpeakerId)
   const setStatus = useSessionStore((s) => s.setStatus)
-  const addTranscriptLine = useSessionStore((s) => s.addTranscriptLine)
+  const addTranscriptWithCrutch = useSessionStore((s) => s.addTranscriptWithCrutch)
   const setPartial = useSessionStore((s) => s.setPartial)
-  const applyCrutchDetections = useSessionStore((s) => s.applyCrutchDetections)
   const applySoundDetections = useSessionStore((s) => s.applySoundDetections)
   const resetSessionData = useSessionStore((s) => s.resetSessionData)
   const markSessionStart = useSessionStore((s) => s.markSessionStart)
@@ -97,9 +96,8 @@ function App() {
       await engine.start(
         {
           onTranscriptFinal: (text) => {
-            addTranscriptLine(text)
             const dets = detector.process(text, Date.now())
-            if (dets.length > 0) applyCrutchDetections(dets)
+            addTranscriptWithCrutch(text, dets)
           },
           onTranscriptPartial: (text) => setPartial(text),
           onSound: (words) => applySoundDetections(words),
@@ -119,9 +117,8 @@ function App() {
     }
   }, [
     setStatus,
-    addTranscriptLine,
+    addTranscriptWithCrutch,
     setPartial,
-    applyCrutchDetections,
     applySoundDetections,
     markSessionStart,
     setLoadingMessage,

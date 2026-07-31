@@ -67,13 +67,16 @@ export interface SessionState {
   removeSpeaker: (id: string) => void
   setActiveSpeaker: (id: string) => void
 
-  addTranscriptLine: (text: string) => void
+  // Add a final transcript line together with the crutch detections found in
+  // it. Detections are linked to the line so the transcript can highlight the
+  // exact words and remove a specific one on click.
+  addTranscriptWithCrutch: (text: string, detections: Detection[]) => void
   setPartial: (text: string) => void
-  applyCrutchDetections: (detections: Detection[]) => void
   applySoundDetections: (words: string[]) => void
   addManualDetection: (word: string, kind: FillerKind) => void
   decrementDetection: (word: string, kind: FillerKind) => void
   clearDetection: (word: string, kind: FillerKind) => void
+  removeDetectionById: (id: string) => void
 
   markSessionStart: () => void
   markSessionEnd: () => void
@@ -211,31 +214,29 @@ export const useSessionStore = create<SessionState>()(
           return { speakers, activeSpeakerId: id }
         }),
 
-      addTranscriptLine: (text) =>
-        set((state) =>
-          mapActive(state, (sp) => ({
-            ...sp,
-            transcript: [
-              ...sp.transcript,
-              { id: crypto.randomUUID(), text, timestamp: Date.now() },
-            ],
-            partialText: '',
+      addTranscriptWithCrutch: (text, detections) =>
+        set((state) => {
+          const line = { id: crypto.randomUUID(), text, timestamp: Date.now() }
+          const tagged = detections.map((d) => ({
+            ...d,
+            kind: 'crutch' as const,
+            lineId: line.id,
           }))
-        ),
+          return mapActive(state, (sp) => {
+            const crutchCounts = { ...sp.crutchCounts }
+            for (const d of tagged) crutchCounts[d.word] = (crutchCounts[d.word] ?? 0) + 1
+            return {
+              ...sp,
+              transcript: [...sp.transcript, line],
+              crutchCounts,
+              detectionLog: [...sp.detectionLog, ...tagged],
+              partialText: '',
+            }
+          })
+        }),
 
       setPartial: (partialText) =>
         set((state) => mapActive(state, (sp) => ({ ...sp, partialText }))),
-
-      applyCrutchDetections: (detections) =>
-        set((state) => {
-          if (detections.length === 0) return {}
-          return mapActive(state, (sp) => {
-            const crutchCounts = { ...sp.crutchCounts }
-            const tagged = detections.map((d) => ({ ...d, kind: 'crutch' as const }))
-            for (const d of tagged) crutchCounts[d.word] = (crutchCounts[d.word] ?? 0) + 1
-            return { ...sp, crutchCounts, detectionLog: [...sp.detectionLog, ...tagged] }
-          })
-        }),
 
       applySoundDetections: (words) =>
         set((state) => {
@@ -309,6 +310,26 @@ export const useSessionStore = create<SessionState>()(
               detectionLog: sp.detectionLog.filter(
                 (d) => !(d.word === word && d.kind === kind)
               ),
+            }
+          })
+        ),
+
+      // Remove one specific detection (used by click-to-dismiss in the
+      // transcript). Decrements its own count and drops the log entry.
+      removeDetectionById: (id) =>
+        set((state) =>
+          mapActive(state, (sp) => {
+            const det = sp.detectionLog.find((d) => d.id === id)
+            if (!det) return sp
+            const key = det.kind === 'sound' ? 'soundCounts' : 'crutchCounts'
+            const counts = { ...sp[key] }
+            const cur = counts[det.word] ?? 0
+            if (cur <= 1) delete counts[det.word]
+            else counts[det.word] = cur - 1
+            return {
+              ...sp,
+              [key]: counts,
+              detectionLog: sp.detectionLog.filter((d) => d.id !== id),
             }
           })
         ),

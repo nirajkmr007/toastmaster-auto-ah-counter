@@ -38,6 +38,9 @@ export interface Detection {
   context: string
   manual?: boolean // true when added by the operator, not the model
   kind?: FillerKind // 'sound' (from recognizer B) or 'crutch' (from transcript rules)
+  lineId?: string // transcript line this crutch hit belongs to (set by the store)
+  pos?: number // token index of the hit within that line (for highlighting)
+  len?: number // number of tokens the hit spans (phrases > 1)
 }
 
 // Single source of truth for sound fillers. Vosk transcribes drawn-out
@@ -193,6 +196,8 @@ export function createDetector(initial: DetectorConfig): Detector {
             word: phrase,
             timestamp,
             context: sliceContext(tokens, i, i + phraseTokens.length),
+            pos: i,
+            len: phraseTokens.length,
           })
         }
         for (let j = 0; j < phraseTokens.length; j++) consumed.add(i + j)
@@ -225,6 +230,8 @@ export function createDetector(initial: DetectorConfig): Detector {
           word: isSound ? canonicalFiller(w) : w,
           timestamp,
           context: sliceContext(tokens, i, i + 1),
+          pos: i,
+          len: 1,
         })
       }
     }

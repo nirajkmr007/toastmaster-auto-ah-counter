@@ -424,6 +424,23 @@
   font-style: italic;
   border: 1px dashed var(--border);
 }
+/* A counted crutch word inside the transcript — click to dismiss it. */
+.tx-hit {
+  font: inherit;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 0 4px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, text-decoration-color 0.12s;
+}
+.tx-hit:hover {
+  color: var(--stop);
+  background: rgba(255, 92, 124, 0.12);
+  border-color: var(--stop);
+  text-decoration: line-through;
+}
 
 /* ---- detection log ---- */
 .detection-log {
