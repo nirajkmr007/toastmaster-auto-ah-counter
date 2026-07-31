@@ -263,9 +263,27 @@
   gap: 20px;
 }
 @media (max-width: 900px) {
+  /* On narrow/tall screens, stop cramming everything into one 100vh column —
+     let the page scroll and give each pane a readable minimum height so the
+     filler panes and transcript don't collapse into each other. */
+  html,
+  body,
+  #root {
+    height: auto;
+  }
+  .app {
+    height: auto;
+    min-height: 100vh;
+  }
   .app-main {
     grid-template-columns: 1fr;
     min-height: 0;
+  }
+  .app-main .pane {
+    min-height: 280px;
+  }
+  .fillers-col > .filler-pane {
+    flex: none;
   }
 }
 
