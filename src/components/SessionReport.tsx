@@ -107,15 +107,16 @@ export function SessionReport() {
               <Metric label="Total fillers" value={String(overview.totalFillers)} />
               <Metric label="Meeting" value={formatDuration(overview.sessionSec)} />
               <Metric
-                label="Cleanest"
+                label="Cleanest speaker"
                 value={overview.cleanestName ?? '—'}
               />
             </div>
 
             {overview.mostName ? (
               <p className="report-summary">
-                Most fillers this session: <strong>{overview.mostName}</strong>.
-                Cleanest floor: <strong>{overview.cleanestName ?? '—'}</strong>.
+                Speaker with most fillers this session:{' '}
+                <strong>{overview.mostName}</strong>. Cleanest speaker on the
+                floor: <strong>{overview.cleanestName ?? '—'}</strong>.
               </p>
             ) : null}
 
