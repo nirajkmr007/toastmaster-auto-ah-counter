@@ -282,14 +282,17 @@
   .app-main .pane {
     min-height: 280px;
   }
-  .fillers-col > .filler-pane {
+  .fillers-col > .filler-pane,
+  .transcript-col > .pane {
     flex: none;
   }
 }
 
-/* Left column: crutch words + sound fillers stacked, with one shared manual-add
-   card at the bottom. Transcript sits alone in the right column. */
-.fillers-col {
+/* Left column: crutch words + sound fillers stacked. Right column: the shared
+   manual-add card on top of the transcript, so the "tap to add" controls sit
+   next to the text you're reacting to. */
+.fillers-col,
+.transcript-col {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -299,8 +302,12 @@
   flex: 1 1 0;
   min-height: 0;
 }
-.fillers-col > .manual-add {
+.transcript-col > .manual-add {
   flex: none;
+}
+.transcript-col > .pane {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .pane {
@@ -951,12 +958,18 @@
   cursor: pointer;
   transition: transform 0.08s, background 0.15s;
 }
-.manual-btn:hover {
+.manual-btn:hover:not(:disabled) {
   background: var(--bg-elev);
   transform: translateY(-1px);
 }
-.manual-btn:active {
+.manual-btn:active:not(:disabled) {
   transform: translateY(0) scale(0.96);
+}
+/* No speaker selected yet — the card stays visible so the feature is
+   discoverable, but there's nothing to attribute a tap to. */
+.manual-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .custom-word {
   display: flex;

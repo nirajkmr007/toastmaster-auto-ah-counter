@@ -242,9 +242,11 @@ function App() {
         <div className="fillers-col">
           <FillerPane kind="crutch" />
           <FillerPane kind="sound" />
-          <ManualAdd />
         </div>
-        <TranscriptPane />
+        <div className="transcript-col">
+          <ManualAdd />
+          <TranscriptPane />
+        </div>
       </main>
 
       <footer className="app-footer" data-tour="footer">

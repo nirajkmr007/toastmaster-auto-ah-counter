@@ -10,7 +10,11 @@ function hueFor(word: string): number {
 
 // One shared "tap to add" section for both boxes: sound buttons add sound
 // fillers, word buttons add crutch words, and the input adds a custom entry as
-// either. All attribute to the active speaker.
+// either. Tapped counts attribute to the active speaker.
+//
+// Always rendered — it's part of the app's shape, so hiding it until a speaker
+// exists made the layout jump and hid the feature from first-time users. With
+// no speaker selected the buttons are disabled instead.
 export function ManualAdd() {
   const active = useSessionStore(selectActiveSpeaker)
   const wordList = useSessionStore((s) => s.wordList)
@@ -20,8 +24,6 @@ export function ManualAdd() {
 
   const sounds = useMemo(() => soundAddWords(wordList), [wordList])
   const words = useMemo(() => crutchAddWords(wordList), [wordList])
-
-  if (!active) return null
 
   const submit = (group: 'sound' | 'word') => {
     const w = custom.trim()
@@ -33,7 +35,15 @@ export function ManualAdd() {
   return (
     <div className="manual-add" data-tour="manual">
       <div className="manual-add-label">
-        Tap to add for <strong>{active.name}</strong>
+        {active ? (
+          <>
+            Tap to add for <strong>{active.name}</strong>
+          </>
+        ) : (
+          <>
+            Tap to add — <strong>add a speaker first</strong>
+          </>
+        )}
       </div>
 
       <div className="manual-add-row">
@@ -45,6 +55,7 @@ export function ManualAdd() {
               type="button"
               className="manual-btn"
               onClick={() => addManualDetection(w, 'sound')}
+              disabled={!active}
               style={{ borderColor: `hsl(${hueFor(w)} 80% 60% / 0.5)` }}
             >
               +{w}
@@ -62,6 +73,7 @@ export function ManualAdd() {
               type="button"
               className="manual-btn"
               onClick={() => addManualDetection(w, 'crutch')}
+              disabled={!active}
               style={{ borderColor: `hsl(${hueFor(w)} 80% 60% / 0.5)` }}
             >
               +{w}
