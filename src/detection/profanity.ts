@@ -24,13 +24,18 @@
 export const MASK = '***'
 
 /**
- * Default blocked list: strong English profanity in the spellings a US English
+ * Built-in blocked list: strong English profanity in the spellings a US English
  * model actually emits. Deliberately excludes mild words that carry real
  * meaning in normal speech ("damn", "hell", "crap") — masking those would
- * mangle legitimate transcripts. Users can add company-specific terms, slurs,
- * or those mild words in Settings; the effective list is what's configured.
+ * mangle legitimate transcripts.
+ *
+ * This list is intentionally NOT surfaced in the UI. It's a filter, not a
+ * feature: printing 40 profanities into a settings panel that gets opened on a
+ * shared screen in a corporate meeting defeats the purpose of having it. Users
+ * add their own terms on top of it instead (see `extraBlockedWords` in the
+ * store) and only ever see what they added themselves.
  */
-export const DEFAULT_BLOCKED_WORDS: string[] = [
+const DEFAULT_BLOCKED_WORDS: string[] = [
   'fuck',
   'fucks',
   'fucked',
@@ -100,7 +105,18 @@ export function maskProfanity(text: string, blocked: Set<string>): string {
     .join('')
 }
 
-/** Build a lookup set from the configured list. */
-export function buildBlockedSet(words: string[]): Set<string> {
-  return new Set(words.map((w) => w.toLowerCase()))
+/** How many words ship built in — safe to show, unlike the words themselves. */
+export const DEFAULT_BLOCKED_COUNT = DEFAULT_BLOCKED_WORDS.length
+
+/**
+ * Effective blocked set: the built-in list plus whatever the user added.
+ * The built-ins are always on; there's no supported way to list or clear them.
+ */
+export function buildBlockedSet(extraWords: string[] = []): Set<string> {
+  const set = new Set(DEFAULT_BLOCKED_WORDS)
+  for (const w of extraWords) {
+    const n = normalizeBlockedWord(w)
+    if (n) set.add(n)
+  }
+  return set
 }

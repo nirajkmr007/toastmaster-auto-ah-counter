@@ -120,9 +120,12 @@ keeps crutch-word highlight positions aligned, and it matches whole tokens only
 unaffected: sound fillers come from recognizer B, whose grammar can't produce
 profanity in the first place.
 
-The list is editable under ⚙ → **Clean transcript** (defaults to strong
-profanity only; mild words like "damn" are left verbatim). Clearing it gives a
-fully verbatim transcript.
+The built-in list covers strong profanity only — mild words like "damn" stay
+verbatim, since masking them would mangle legitimate speech. It is deliberately
+**not rendered in the UI**: printing 40 profanities into a settings panel that
+gets opened on a shared screen defeats the point. Under ⚙ → **Clean transcript**
+users can add their own terms on top of it and see only what they added; editing
+the built-ins means editing `DEFAULT_BLOCKED_WORDS` in the source.
 
 ## Deploy (GitHub Pages)
 

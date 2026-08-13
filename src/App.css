@@ -1296,30 +1296,6 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-/* Masked-word list: long and not something to stare at, so it collapses
-   behind a link and renders dimmer than the filler chips. */
-.settings-link-btn {
-  align-self: flex-start;
-  padding: 0;
-  border: none;
-  background: none;
-  color: var(--accent);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.settings-chips-muted {
-  max-height: 160px;
-  overflow-y: auto;
-  opacity: 0.75;
-}
-.settings-chips-muted .settings-chip-word {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-}
-
 .settings-presets {
   display: flex;
   flex-direction: column;

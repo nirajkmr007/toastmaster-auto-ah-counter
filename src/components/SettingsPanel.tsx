@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import { useSessionStore } from '../store'
 import { canonicalFiller } from '../detection/detector'
 import { PRESETS } from '../detection/presets'
+import { DEFAULT_BLOCKED_COUNT } from '../detection/profanity'
 
 // Full CRUD manager for the effective filler-word list. Sounds are shown by
 // canonical label (deleting one drops all its spelling variants); crutch words
@@ -18,14 +19,13 @@ export function SettingsPanel() {
   const setPreset = useSessionStore((s) => s.setPreset)
   const hardStopMs = useSessionStore((s) => s.hardStopMs)
   const setHardStop = useSessionStore((s) => s.setHardStop)
-  const blockedWords = useSessionStore((s) => s.blockedWords)
+  const extraBlockedWords = useSessionStore((s) => s.extraBlockedWords)
   const addBlockedWord = useSessionStore((s) => s.addBlockedWord)
   const removeBlockedWord = useSessionStore((s) => s.removeBlockedWord)
 
   const [soundInput, setSoundInput] = useState('')
   const [wordInput, setWordInput] = useState('')
   const [blockedInput, setBlockedInput] = useState('')
-  const [showBlocked, setShowBlocked] = useState(false)
 
   // Sounds collapsed to canonical labels (um, uh, …), stable order.
   const sounds = useMemo(() => {
@@ -151,11 +151,12 @@ export function SettingsPanel() {
               <div className="settings-group-head">
                 <span className="settings-group-title">Clean transcript</span>
                 <span className="settings-group-sub dim">
-                  The model can mishear a grunt or breath as a rude word. These{' '}
-                  {blockedWords.length} words are replaced with{' '}
-                  <code>***</code> before anything is shown, stored or
-                  exported. Filler counts are unaffected. Clear the list for a
-                  verbatim transcript.
+                  The model can mishear a grunt or a breath as a rude word.{' '}
+                  {DEFAULT_BLOCKED_COUNT} common profanities are always replaced
+                  with <code>***</code> before anything is shown, stored or
+                  exported — the built-in list isn&rsquo;t displayed here on
+                  purpose. Filler counts are unaffected. Add any extra words you
+                  want masked below.
                 </span>
               </div>
 
@@ -163,7 +164,7 @@ export function SettingsPanel() {
                 <input
                   type="text"
                   value={blockedInput}
-                  placeholder="Add a word to mask"
+                  placeholder="Add another word to mask"
                   onChange={(e) => setBlockedInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') submitBlocked()
@@ -181,19 +182,9 @@ export function SettingsPanel() {
                 </button>
               </div>
 
-              <button
-                type="button"
-                className="settings-link-btn"
-                onClick={() => setShowBlocked((v) => !v)}
-              >
-                {showBlocked
-                  ? 'Hide list'
-                  : `Show / edit list (${blockedWords.length})`}
-              </button>
-
-              {showBlocked ? (
-                <div className="settings-chips settings-chips-muted">
-                  {blockedWords.map((w) => (
+              {extraBlockedWords.length > 0 ? (
+                <div className="settings-chips">
+                  {extraBlockedWords.map((w) => (
                     <span key={w} className="settings-chip">
                       <span className="settings-chip-word">{w}</span>
                       <button

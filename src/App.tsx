@@ -112,7 +112,10 @@ function App() {
       // Blocked list is read live per utterance so edits in Settings take
       // effect mid-session without restarting the recognizers.
       const clean = (text: string) =>
-        maskProfanity(text, buildBlockedSet(useSessionStore.getState().blockedWords))
+        maskProfanity(
+          text,
+          buildBlockedSet(useSessionStore.getState().extraBlockedWords)
+        )
 
       await engine.start(
         {

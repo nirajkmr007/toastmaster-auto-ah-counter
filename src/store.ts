@@ -3,10 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { Detection, FillerKind, Sensitivity, WordList } from './detection/detector'
 import { canonicalFiller } from './detection/detector'
 import { TOASTMASTERS_CLASSIC } from './detection/presets'
-import {
-  DEFAULT_BLOCKED_WORDS,
-  normalizeBlockedWord,
-} from './detection/profanity'
+import { normalizeBlockedWord } from './detection/profanity'
 
 export type FillerGroup = 'sound' | 'word'
 
@@ -45,9 +42,10 @@ export interface SessionState {
   sensitivity: Sensitivity
   presetName: string
 
-  // Words masked out of the transcript before anything is stored or shown.
-  // Empty list = verbatim transcript.
-  blockedWords: string[]
+  // User-added words to mask, ON TOP of the built-in profanity list in
+  // detection/profanity.ts. Only these are shown in the UI — the built-ins are
+  // deliberately never listed.
+  extraBlockedWords: string[]
 
   speakers: Speaker[]
   activeSpeakerId: string | null
@@ -69,7 +67,6 @@ export interface SessionState {
   setHardStop: (ms: number) => void
   addBlockedWord: (word: string) => void
   removeBlockedWord: (word: string) => void
-  resetBlockedWords: () => void
   setLoadingMessage: (msg: string | null) => void
 
   addFiller: (word: string, group: FillerGroup) => void
@@ -142,7 +139,7 @@ export const useSessionStore = create<SessionState>()(
       wordList: TOASTMASTERS_CLASSIC,
       sensitivity: 'extra-strict',
       presetName: 'Toastmasters Classic',
-      blockedWords: DEFAULT_BLOCKED_WORDS,
+      extraBlockedWords: [],
 
       speakers: [],
       activeSpeakerId: null,
@@ -177,18 +174,17 @@ export const useSessionStore = create<SessionState>()(
         const w = normalizeBlockedWord(word)
         if (!w) return
         set((state) =>
-          state.blockedWords.includes(w)
+          state.extraBlockedWords.includes(w)
             ? state
-            : { blockedWords: [...state.blockedWords, w] }
+            : { extraBlockedWords: [...state.extraBlockedWords, w] }
         )
       },
       removeBlockedWord: (word) => {
         const w = normalizeBlockedWord(word)
         set((state) => ({
-          blockedWords: state.blockedWords.filter((x) => x !== w),
+          extraBlockedWords: state.extraBlockedWords.filter((x) => x !== w),
         }))
       },
-      resetBlockedWords: () => set({ blockedWords: DEFAULT_BLOCKED_WORDS }),
 
       addFiller: (raw, group) =>
         set((state) => {
@@ -428,7 +424,7 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: 'ah-counter-config',
-      version: 2,
+      version: 3,
       // Persist ONLY configuration — never speech, transcripts, or the roster.
       partialize: (s) => ({
         wordList: s.wordList,
@@ -436,8 +432,16 @@ export const useSessionStore = create<SessionState>()(
         sensitivity: s.sensitivity,
         targetDurationMs: s.targetDurationMs,
         hardStopMs: s.hardStopMs,
-        blockedWords: s.blockedWords,
+        extraBlockedWords: s.extraBlockedWords,
       }),
+      // v3 dropped the old `blockedWords` key, which stored the built-in
+      // profanity list in localStorage. The built-ins now live in code only.
+      migrate: (persisted, version) => {
+        const s = { ...(persisted as Record<string, unknown>) }
+        if (version < 3) delete s.blockedWords
+        // Partial by design — persist merges this over the default state.
+        return s as unknown as SessionState
+      },
     }
   )
 )
