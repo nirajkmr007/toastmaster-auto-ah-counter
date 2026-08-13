@@ -10,6 +10,7 @@ import { Timer } from './components/Timer'
 import { Tour, TOUR_SEEN_KEY } from './components/Tour'
 import { useSessionStore } from './store'
 import { createDetector, type Detector } from './detection/detector'
+import { buildBlockedSet, maskProfanity } from './detection/profanity'
 import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
 import { MODEL_URL } from './audio/models'
 import './App.css'
@@ -108,13 +109,19 @@ function App() {
 
       const soundGrammar = useSessionStore.getState().wordList.soundFillers
 
+      // Blocked list is read live per utterance so edits in Settings take
+      // effect mid-session without restarting the recognizers.
+      const clean = (text: string) =>
+        maskProfanity(text, buildBlockedSet(useSessionStore.getState().blockedWords))
+
       await engine.start(
         {
           onTranscriptFinal: (text) => {
-            const dets = detector.process(text, Date.now())
-            addTranscriptWithCrutch(text, dets)
+            const masked = clean(text)
+            const dets = detector.process(masked, Date.now())
+            addTranscriptWithCrutch(masked, dets)
           },
-          onTranscriptPartial: (text) => setPartial(text),
+          onTranscriptPartial: (text) => setPartial(clean(text)),
           onSound: (words) => applySoundDetections(words),
           onError: (err) => {
             const msg = err instanceof Error ? err.message : String(err)

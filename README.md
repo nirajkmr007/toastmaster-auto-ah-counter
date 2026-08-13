@@ -104,6 +104,26 @@ recall/precision knob to fight: A handles English, B specializes in sounds. The
 filler-sound list (recognizer B's grammar) and the crutch words are both edited
 in the ⚙ **Manage filler words** panel.
 
+### Clean transcript (profanity masking)
+
+Because recognizer A runs the model's full open vocabulary, a nonverbal burst —
+a throat clear, a plosive into the mic, a long `ahh` — occasionally decodes as a
+short profane word that nobody said. This tool gets used in corporate meetings
+and on shared screens, so `src/detection/profanity.ts` masks a configurable list
+of words to `***`.
+
+The mask is applied **at ingestion**, before the text reaches the store, so
+nothing profane ever lands in the transcript pane, the report, the exported PNG
+or the copied session log. It's token-preserving (one word → one `***`), which
+keeps crutch-word highlight positions aligned, and it matches whole tokens only
+— `class`, `assume` and `passage` are never touched. Filler counting is
+unaffected: sound fillers come from recognizer B, whose grammar can't produce
+profanity in the first place.
+
+The list is editable under ⚙ → **Clean transcript** (defaults to strong
+profanity only; mild words like "damn" are left verbatim). Clearing it gives a
+fully verbatim transcript.
+
 ## Deploy (GitHub Pages)
 
 The app is a fully static bundle, so any static host works. This repo ships a

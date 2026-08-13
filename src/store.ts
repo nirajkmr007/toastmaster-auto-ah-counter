@@ -3,6 +3,10 @@ import { persist } from 'zustand/middleware'
 import type { Detection, FillerKind, Sensitivity, WordList } from './detection/detector'
 import { canonicalFiller } from './detection/detector'
 import { TOASTMASTERS_CLASSIC } from './detection/presets'
+import {
+  DEFAULT_BLOCKED_WORDS,
+  normalizeBlockedWord,
+} from './detection/profanity'
 
 export type FillerGroup = 'sound' | 'word'
 
@@ -41,6 +45,10 @@ export interface SessionState {
   sensitivity: Sensitivity
   presetName: string
 
+  // Words masked out of the transcript before anything is stored or shown.
+  // Empty list = verbatim transcript.
+  blockedWords: string[]
+
   speakers: Speaker[]
   activeSpeakerId: string | null
 
@@ -59,6 +67,9 @@ export interface SessionState {
   setPreset: (name: string, list: WordList) => void
   setTargetDuration: (ms: number | null) => void
   setHardStop: (ms: number) => void
+  addBlockedWord: (word: string) => void
+  removeBlockedWord: (word: string) => void
+  resetBlockedWords: () => void
   setLoadingMessage: (msg: string | null) => void
 
   addFiller: (word: string, group: FillerGroup) => void
@@ -131,6 +142,7 @@ export const useSessionStore = create<SessionState>()(
       wordList: TOASTMASTERS_CLASSIC,
       sensitivity: 'extra-strict',
       presetName: 'Toastmasters Classic',
+      blockedWords: DEFAULT_BLOCKED_WORDS,
 
       speakers: [],
       activeSpeakerId: null,
@@ -160,6 +172,23 @@ export const useSessionStore = create<SessionState>()(
               : null,
         })),
       setLoadingMessage: (loadingMessage) => set({ loadingMessage }),
+
+      addBlockedWord: (word) => {
+        const w = normalizeBlockedWord(word)
+        if (!w) return
+        set((state) =>
+          state.blockedWords.includes(w)
+            ? state
+            : { blockedWords: [...state.blockedWords, w] }
+        )
+      },
+      removeBlockedWord: (word) => {
+        const w = normalizeBlockedWord(word)
+        set((state) => ({
+          blockedWords: state.blockedWords.filter((x) => x !== w),
+        }))
+      },
+      resetBlockedWords: () => set({ blockedWords: DEFAULT_BLOCKED_WORDS }),
 
       addFiller: (raw, group) =>
         set((state) => {
@@ -407,6 +436,7 @@ export const useSessionStore = create<SessionState>()(
         sensitivity: s.sensitivity,
         targetDurationMs: s.targetDurationMs,
         hardStopMs: s.hardStopMs,
+        blockedWords: s.blockedWords,
       }),
     }
   )

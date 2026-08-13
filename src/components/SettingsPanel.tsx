@@ -18,9 +18,14 @@ export function SettingsPanel() {
   const setPreset = useSessionStore((s) => s.setPreset)
   const hardStopMs = useSessionStore((s) => s.hardStopMs)
   const setHardStop = useSessionStore((s) => s.setHardStop)
+  const blockedWords = useSessionStore((s) => s.blockedWords)
+  const addBlockedWord = useSessionStore((s) => s.addBlockedWord)
+  const removeBlockedWord = useSessionStore((s) => s.removeBlockedWord)
 
   const [soundInput, setSoundInput] = useState('')
   const [wordInput, setWordInput] = useState('')
+  const [blockedInput, setBlockedInput] = useState('')
+  const [showBlocked, setShowBlocked] = useState(false)
 
   // Sounds collapsed to canonical labels (um, uh, …), stable order.
   const sounds = useMemo(() => {
@@ -52,6 +57,12 @@ export function SettingsPanel() {
     if (!w) return
     addFiller(w, 'word')
     setWordInput('')
+  }
+  const submitBlocked = () => {
+    const w = blockedInput.trim()
+    if (!w) return
+    addBlockedWord(w)
+    setBlockedInput('')
   }
 
   return (
@@ -135,6 +146,69 @@ export function SettingsPanel() {
               onSubmit={submitWord}
               placeholder="Add a word or phrase, e.g. right / at this point"
             />
+
+            <div className="settings-group">
+              <div className="settings-group-head">
+                <span className="settings-group-title">Clean transcript</span>
+                <span className="settings-group-sub dim">
+                  The model can mishear a grunt or breath as a rude word. These{' '}
+                  {blockedWords.length} words are replaced with{' '}
+                  <code>***</code> before anything is shown, stored or
+                  exported. Filler counts are unaffected. Clear the list for a
+                  verbatim transcript.
+                </span>
+              </div>
+
+              <div className="settings-add">
+                <input
+                  type="text"
+                  value={blockedInput}
+                  placeholder="Add a word to mask"
+                  onChange={(e) => setBlockedInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') submitBlocked()
+                  }}
+                  maxLength={30}
+                  autoComplete="off"
+                />
+                <button
+                  type="button"
+                  className="settings-add-btn"
+                  onClick={submitBlocked}
+                  disabled={!blockedInput.trim()}
+                >
+                  Add
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="settings-link-btn"
+                onClick={() => setShowBlocked((v) => !v)}
+              >
+                {showBlocked
+                  ? 'Hide list'
+                  : `Show / edit list (${blockedWords.length})`}
+              </button>
+
+              {showBlocked ? (
+                <div className="settings-chips settings-chips-muted">
+                  {blockedWords.map((w) => (
+                    <span key={w} className="settings-chip">
+                      <span className="settings-chip-word">{w}</span>
+                      <button
+                        type="button"
+                        className="settings-chip-remove"
+                        aria-label={`Stop masking ${w}`}
+                        onClick={() => removeBlockedWord(w)}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
 
             <div className="settings-presets">
               <span className="settings-presets-label">Load a preset</span>
