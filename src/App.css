@@ -1296,6 +1296,21 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-h);
+  cursor: pointer;
+}
+.settings-toggle input[type='checkbox'] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
 .settings-presets {
   display: flex;
   flex-direction: column;

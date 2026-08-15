@@ -120,12 +120,30 @@ keeps crutch-word highlight positions aligned, and it matches whole tokens only
 unaffected: sound fillers come from recognizer B, whose grammar can't produce
 profanity in the first place.
 
-The built-in list covers strong profanity only — mild words like "damn" stay
-verbatim, since masking them would mangle legitimate speech. It is deliberately
-**not rendered in the UI**: printing 40 profanities into a settings panel that
-gets opened on a shared screen defeats the point. Under ⚙ → **Clean transcript**
-users can add their own terms on top of it and see only what they added; editing
-the built-ins means editing `DEFAULT_BLOCKED_WORDS` in the source.
+The list has two tiers:
+
+- **Strong (186 words, always on)** — profanity, explicit sexual/anatomical
+  terms, and racial/ethnic/homophobic/ableist slurs.
+- **Mild (18 words, on by default, one checkbox to disable)** — crude but
+  ordinary in speech: `damn`, `hell`, `crap`.
+
+Every entry was intersected against the recognizer's **actual vocabulary** — the
+152,217-word symbol table inside `graph/Gr.fst` of the shipped model — so the
+list contains no words the model is incapable of emitting, and nothing that
+could fire is missing for lack of an inflection. If the model is ever swapped,
+re-run that intersection.
+
+Words are deliberately **excluded** where masking would damage honest speech:
+ordinary technical vocabulary (`git`, `knob`, `screw`, `stripper`, `slag`,
+`cracker`), common names (`dick`, `willy`, `fanny`, `coon`), reclaimed identity
+terms (`queer`), clinical terms (`spastic`), and plain insults that aren't
+embarrassing to display (`stupid`, `idiot`). The full rationale, including the
+trade-offs knowingly accepted, is in the header of `profanity.ts`.
+
+The built-in list is deliberately **not rendered in the UI** — printing 200
+profanities and slurs into a settings panel that gets opened on a shared screen
+defeats the point. Under ⚙ → **Clean transcript** users see only the words they
+added themselves; changing the built-ins means editing the source.
 
 ## Deploy (GitHub Pages)
 

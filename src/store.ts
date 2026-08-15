@@ -46,6 +46,8 @@ export interface SessionState {
   // detection/profanity.ts. Only these are shown in the UI — the built-ins are
   // deliberately never listed.
   extraBlockedWords: string[]
+  // Also mask the mild tier (damn, hell, crap…). Strong tier is always on.
+  maskMildWords: boolean
 
   speakers: Speaker[]
   activeSpeakerId: string | null
@@ -67,6 +69,7 @@ export interface SessionState {
   setHardStop: (ms: number) => void
   addBlockedWord: (word: string) => void
   removeBlockedWord: (word: string) => void
+  setMaskMildWords: (on: boolean) => void
   setLoadingMessage: (msg: string | null) => void
 
   addFiller: (word: string, group: FillerGroup) => void
@@ -140,6 +143,7 @@ export const useSessionStore = create<SessionState>()(
       sensitivity: 'extra-strict',
       presetName: 'Toastmasters Classic',
       extraBlockedWords: [],
+      maskMildWords: true,
 
       speakers: [],
       activeSpeakerId: null,
@@ -185,6 +189,7 @@ export const useSessionStore = create<SessionState>()(
           extraBlockedWords: state.extraBlockedWords.filter((x) => x !== w),
         }))
       },
+      setMaskMildWords: (maskMildWords) => set({ maskMildWords }),
 
       addFiller: (raw, group) =>
         set((state) => {
@@ -433,6 +438,7 @@ export const useSessionStore = create<SessionState>()(
         targetDurationMs: s.targetDurationMs,
         hardStopMs: s.hardStopMs,
         extraBlockedWords: s.extraBlockedWords,
+        maskMildWords: s.maskMildWords,
       }),
       // v3 dropped the old `blockedWords` key, which stored the built-in
       // profanity list in localStorage. The built-ins now live in code only.

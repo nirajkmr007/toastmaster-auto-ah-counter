@@ -3,7 +3,10 @@ import { useMemo, useState } from 'react'
 import { useSessionStore } from '../store'
 import { canonicalFiller } from '../detection/detector'
 import { PRESETS } from '../detection/presets'
-import { DEFAULT_BLOCKED_COUNT } from '../detection/profanity'
+import {
+  MILD_BLOCKED_COUNT,
+  STRONG_BLOCKED_COUNT,
+} from '../detection/profanity'
 
 // Full CRUD manager for the effective filler-word list. Sounds are shown by
 // canonical label (deleting one drops all its spelling variants); crutch words
@@ -22,6 +25,8 @@ export function SettingsPanel() {
   const extraBlockedWords = useSessionStore((s) => s.extraBlockedWords)
   const addBlockedWord = useSessionStore((s) => s.addBlockedWord)
   const removeBlockedWord = useSessionStore((s) => s.removeBlockedWord)
+  const maskMildWords = useSessionStore((s) => s.maskMildWords)
+  const setMaskMildWords = useSessionStore((s) => s.setMaskMildWords)
 
   const [soundInput, setSoundInput] = useState('')
   const [wordInput, setWordInput] = useState('')
@@ -152,13 +157,24 @@ export function SettingsPanel() {
                 <span className="settings-group-title">Clean transcript</span>
                 <span className="settings-group-sub dim">
                   The model can mishear a grunt or a breath as a rude word.{' '}
-                  {DEFAULT_BLOCKED_COUNT} common profanities are always replaced
-                  with <code>***</code> before anything is shown, stored or
-                  exported — the built-in list isn&rsquo;t displayed here on
-                  purpose. Filler counts are unaffected. Add any extra words you
-                  want masked below.
+                  {STRONG_BLOCKED_COUNT} profanities and slurs are always
+                  replaced with <code>***</code> before anything is shown,
+                  stored or exported — the built-in list isn&rsquo;t displayed
+                  here on purpose. Filler counts are unaffected.
                 </span>
               </div>
+
+              <label className="settings-toggle">
+                <input
+                  type="checkbox"
+                  checked={maskMildWords}
+                  onChange={(e) => setMaskMildWords(e.target.checked)}
+                />
+                <span>
+                  Also mask {MILD_BLOCKED_COUNT} mild words (damn, hell,
+                  crap&hellip;)
+                </span>
+              </label>
 
               <div className="settings-add">
                 <input
