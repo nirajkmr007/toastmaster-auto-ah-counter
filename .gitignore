@@ -12,8 +12,12 @@ dist
 dist-ssr
 *.local
 
-# Self-hosted STT model tarballs (if you ever drop one in public/models/)
+# Self-hosted STT model tarballs. Ignored by default, with one exception: the
+# Indian-English model MUST be committed and deployed, because it has to be
+# served same-origin — cross-origin hosts (GitHub Release assets in particular)
+# fail the browser's CORS check on the redirect. See src/audio/models.ts.
 public/models/*.tar.gz
+!public/models/vosk-model-small-en-in-0.4.tar.gz
 
 # Model repacking (scripts/repack-en-in-model.sh). Big binaries — these are
 # uploaded as GitHub Release assets, never committed.

@@ -60,7 +60,20 @@ export function createVoskEngine(modelUrl: string): VoskEngine {
     } catch (err) {
       modelLoadPromise = null
       const msg = err instanceof Error ? err.message : String(err)
-      throw new Error(`Couldn't load model from ${modelUrl} (${msg}).`)
+      // "Failed to fetch" is what the browser reports for both a dead network
+      // and a blocked cross-origin request, and the CORS detail only appears in
+      // the console. Say so, rather than leaving the user with four useless
+      // words.
+      const crossOrigin =
+        !modelUrl.startsWith(window.location.origin) &&
+        /failed to fetch|networkerror|load failed/i.test(msg)
+      throw new Error(
+        crossOrigin
+          ? `Couldn't download the speech model. It's hosted on another domain ` +
+            `(${new URL(modelUrl).host}) which isn't sending the CORS headers a ` +
+            `browser needs. Check the console for details.`
+          : `Couldn't load the speech model from ${modelUrl} (${msg}).`
+      )
     }
   }
 

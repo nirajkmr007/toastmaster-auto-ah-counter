@@ -35,14 +35,29 @@ export interface ModelOption {
 }
 
 /**
- * Indian-English bundle: the repacked tar.gz, hosted as a Release asset on this
- * repo (37.6 MB, sha256 a75657b8…). Built by scripts/repack-en-in-model.sh.
+ * Indian-English bundle: served from THIS origin, out of public/models/.
+ *
+ * It has to be same-origin. A GitHub Release asset was tried first and fails:
+ * `github.com/<owner>/<repo>/releases/download/...` answers with a 302 to a
+ * signed objects.githubusercontent.com URL, and that redirect response carries
+ * no Access-Control-Allow-Origin header, so the browser blocks the fetch before
+ * it ever follows the redirect. Release assets work for curl and for
+ * `<a download>`; they do not work for cross-origin fetch. Serving the file
+ * from Pages alongside the app removes the question entirely — same-origin
+ * requests are not subject to CORS.
+ *
+ * Built as an absolute URL because vosk-browser fetches inside a Web Worker
+ * that may be created from a blob:, where a root-relative path would not
+ * resolve against the page. BASE_URL keeps it correct under the Pages subpath
+ * ('/toastmaster-auto-ah-counter/') and in dev ('/').
  *
  * Set this to '' to disable the option — the toggle then renders visibly
- * disabled instead of shipping a button that 404s.
+ * disabled instead of shipping a button that fails.
  */
-const EN_IN_MODEL_URL =
-  'https://github.com/nirajkmr007/toastmaster-auto-ah-counter/releases/download/models-v1/vosk-model-small-en-in-0.4.tar.gz'
+const EN_IN_MODEL_URL = new URL(
+  `${import.meta.env.BASE_URL}models/vosk-model-small-en-in-0.4.tar.gz`,
+  window.location.href
+).href
 
 export const MODELS: ModelOption[] = [
   {
@@ -57,7 +72,7 @@ export const MODELS: ModelOption[] = [
     label: 'Indian English',
     note: 'Trained on Indian-accented speech. Separate one-time download.',
     url: EN_IN_MODEL_URL,
-    approxSizeMb: 36,
+    approxSizeMb: 37,
   },
 ]
 

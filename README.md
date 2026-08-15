@@ -110,18 +110,26 @@ in the ⚙ **Manage filler words** panel.
 disposes the loaded model (terminating its Web Worker, which holds ~300 MB at
 runtime) and downloads the other one; it's disabled while listening.
 
-**Indian English needs a one-time setup step by the maintainer.** vosk-browser
-loads models only as *gzipped tar archives*, but alphacephei publishes `.zip`,
-so the model has to be repacked and hosted somewhere that sends CORS headers:
+**The Indian-English model is committed to this repo**, at
+`public/models/vosk-model-small-en-in-0.4.tar.gz` (37.6 MB), and served by Pages
+alongside the app. That is deliberate, and the reason is CORS:
 
-```bash
-./scripts/repack-en-in-model.sh          # download, repack, verify
-gh release create models-v1 dist-models/vosk-model-small-en-in-0.4.tar.gz
-# then paste the asset URL into EN_IN_MODEL_URL in src/audio/models.ts
-```
+- vosk-browser loads models only as *gzipped tar archives*, but alphacephei
+  publishes `.zip` — so the file has to be repacked either way
+  (`./scripts/repack-en-in-model.sh`).
+- A **GitHub Release asset does not work.** `releases/download/...` answers with
+  a 302 to a signed `objects.githubusercontent.com` URL, and that redirect
+  response carries no `Access-Control-Allow-Origin`, so the browser blocks the
+  fetch before following it. Release assets are fine for `curl` and
+  `<a download>`, not for cross-origin `fetch`.
+- Serving it from Pages makes the request **same-origin**, where CORS does not
+  apply at all. No third-party host to trust or verify.
 
-Until that URL is filled in, the Indian English button renders disabled and
-labelled "not hosted yet" rather than shipping a toggle that 404s.
+The cost is a 37.6 MB blob in git history, accepted knowingly. `.gitignore`
+ignores `public/models/*.tar.gz` with an explicit exception for this one file.
+
+To disable the option instead, set `EN_IN_MODEL_URL` in `src/audio/models.ts` to
+`''` — the toggle then renders visibly disabled rather than failing on click.
 
 **On accuracy, honestly:** the published WERs are measured on *different test
 sets* and are not comparable — en-US small scores 9.85 (librispeech test-clean)
