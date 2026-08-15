@@ -35,12 +35,14 @@ export interface ModelOption {
 }
 
 /**
- * Indian-English bundle. Empty until the repacked tar.gz is uploaded as a
- * Release asset — see scripts/repack-en-in-model.sh, which prints the exact
- * URL to paste here. An empty URL keeps the option visible but disabled,
- * rather than shipping a toggle that 404s.
+ * Indian-English bundle: the repacked tar.gz, hosted as a Release asset on this
+ * repo (37.6 MB, sha256 a75657b8…). Built by scripts/repack-en-in-model.sh.
+ *
+ * Set this to '' to disable the option — the toggle then renders visibly
+ * disabled instead of shipping a button that 404s.
  */
-const EN_IN_MODEL_URL = ''
+const EN_IN_MODEL_URL =
+  'https://github.com/nirajkmr007/toastmaster-auto-ah-counter/releases/download/models-v1/vosk-model-small-en-in-0.4.tar.gz'
 
 export const MODELS: ModelOption[] = [
   {
