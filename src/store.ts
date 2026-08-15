@@ -4,6 +4,7 @@ import type { Detection, FillerKind, Sensitivity, WordList } from './detection/d
 import { canonicalFiller } from './detection/detector'
 import { TOASTMASTERS_CLASSIC } from './detection/presets'
 import { normalizeBlockedWord } from './detection/profanity'
+import { DEFAULT_MODEL_ID } from './audio/models'
 
 export type FillerGroup = 'sound' | 'word'
 
@@ -49,6 +50,10 @@ export interface SessionState {
   // Also mask the mild tier (damn, hell, crap…). Strong tier is always on.
   maskMildWords: boolean
 
+  // Which speech model to use (see audio/models.ts). Persisted, but switching
+  // means a fresh model download, so it's blocked while listening.
+  modelId: string
+
   speakers: Speaker[]
   activeSpeakerId: string | null
 
@@ -70,6 +75,7 @@ export interface SessionState {
   addBlockedWord: (word: string) => void
   removeBlockedWord: (word: string) => void
   setMaskMildWords: (on: boolean) => void
+  setModelId: (id: string) => void
   setLoadingMessage: (msg: string | null) => void
 
   addFiller: (word: string, group: FillerGroup) => void
@@ -144,6 +150,7 @@ export const useSessionStore = create<SessionState>()(
       presetName: 'Toastmasters Classic',
       extraBlockedWords: [],
       maskMildWords: true,
+      modelId: DEFAULT_MODEL_ID,
 
       speakers: [],
       activeSpeakerId: null,
@@ -190,6 +197,7 @@ export const useSessionStore = create<SessionState>()(
         }))
       },
       setMaskMildWords: (maskMildWords) => set({ maskMildWords }),
+      setModelId: (modelId) => set({ modelId }),
 
       addFiller: (raw, group) =>
         set((state) => {
@@ -439,6 +447,7 @@ export const useSessionStore = create<SessionState>()(
         hardStopMs: s.hardStopMs,
         extraBlockedWords: s.extraBlockedWords,
         maskMildWords: s.maskMildWords,
+        modelId: s.modelId,
       }),
       // v3 dropped the old `blockedWords` key, which stored the built-in
       // profanity list in localStorage. The built-ins now live in code only.

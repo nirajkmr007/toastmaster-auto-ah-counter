@@ -87,9 +87,9 @@ preview` (serve the build), `npm run lint` (oxlint).
 
 ## Speech recognition (two recognizers)
 
-There's one model — the ~40 MB `vosk-model-small-en-us-0.15`, fetched from a
-CDN on first load and browser-cached. It powers two recognizers created from
-`src/audio/voskEngine.ts`:
+One model is downloaded per session (default: the ~40 MB
+`vosk-model-small-en-us-0.15`), fetched on first load and browser-cached. It
+powers two recognizers created from `src/audio/voskEngine.ts`:
 
 - **Recognizer A** — full grammar. Produces the live transcript; the crutch
   words (`so`, `like`, `actually`, `you know`) are found by text rules in
@@ -103,6 +103,65 @@ Both are fed the same audio. This is why there's no offline model tuning and no
 recall/precision knob to fight: A handles English, B specializes in sounds. The
 filler-sound list (recognizer B's grammar) and the crutch words are both edited
 in the ⚙ **Manage filler words** panel.
+
+### Accent model (US / Indian English)
+
+⚙ → **Accent model** switches between US English and Indian English. Switching
+disposes the loaded model (terminating its Web Worker, which holds ~300 MB at
+runtime) and downloads the other one; it's disabled while listening.
+
+**Indian English needs a one-time setup step by the maintainer.** vosk-browser
+loads models only as *gzipped tar archives*, but alphacephei publishes `.zip`,
+so the model has to be repacked and hosted somewhere that sends CORS headers:
+
+```bash
+./scripts/repack-en-in-model.sh          # download, repack, verify
+gh release create models-v1 dist-models/vosk-model-small-en-in-0.4.tar.gz
+# then paste the asset URL into EN_IN_MODEL_URL in src/audio/models.ts
+```
+
+Until that URL is filled in, the Indian English button renders disabled and
+labelled "not hosted yet" rather than shipping a toggle that 404s.
+
+**On accuracy, honestly:** the published WERs are measured on *different test
+sets* and are not comparable — en-US small scores 9.85 (librispeech test-clean)
+while en-IN small scores 49.05 (NPTEL Pure). The Indian-English model is trained
+on Indian-accented speech and should transcribe Indian speakers better in
+practice, but no one has benchmarked the two head-to-head on the same audio.
+Treat the toggle as "try both, keep what works".
+
+#### Verifying a model before shipping it
+
+`scripts/verify-model-vocab.py` parses a model's vocabulary — from `words.txt`
+if present, otherwise straight out of the OpenFst symbol table in
+`graph/Gr.fst`, since small Vosk models ship no plain word list — and checks the
+two things that silently break when a model changes:
+
+1. **Every filler sound is reachable.** A Kaldi grammar can only contain
+   in-vocabulary words, so a filler the model has no symbol for can never be
+   counted by recognizer B — with no error, just silence. The check passes if at
+   least one spelling of each canonical sound is present.
+2. **The profanity blocklist still lines up.** The shipped list was intersected
+   against the en-US vocabulary; a different model means different coverage.
+
+```bash
+./scripts/verify-model-vocab.py path/to/model.tar.gz
+```
+
+Results for both shipped models:
+
+| | en-US 0.15 | en-IN 0.4 |
+|---|---|---|
+| Vocabulary | 152,217 words | 72,551 words |
+| Canonical filler sounds reachable | 8/8 | 8/8 |
+| Inert spelling variants | `uhhh` | `ahhh ehh erm mmm uhhh ummm` |
+| Blocklist words present | 206/209 | 147/209 |
+
+Inert variants are harmless — each canonical sound still has at least one
+spelling the model can emit, and a blocked word the model can't say needs no
+masking. The en-IN vocabulary being less than half the size of en-US is worth
+noting though: fewer words means more speech decoded into whatever *is* in
+vocabulary, which is consistent with its higher published WER.
 
 ### Clean transcript (profanity masking)
 

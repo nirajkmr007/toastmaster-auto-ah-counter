@@ -15,6 +15,11 @@ dist-ssr
 # Self-hosted STT model tarballs (if you ever drop one in public/models/)
 public/models/*.tar.gz
 
+# Model repacking (scripts/repack-en-in-model.sh). Big binaries — these are
+# uploaded as GitHub Release assets, never committed.
+dist-models/
+scripts/.model-work/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

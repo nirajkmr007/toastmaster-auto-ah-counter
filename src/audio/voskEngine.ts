@@ -31,6 +31,14 @@ export interface VoskEngine {
   start: (handlers: VoskHandlers, soundGrammar: string[]) => Promise<void>
   stop: () => Promise<void>
   isModelLoaded: () => boolean
+  /** Which model URL this engine was built for. */
+  modelUrl: string
+  /**
+   * Release the model and its Web Worker. Required when switching models —
+   * each model spawns its own worker holding ~300 MB of runtime memory, so
+   * dropping the reference without terminating would leak it.
+   */
+  dispose: () => Promise<void>
 }
 
 export function createVoskEngine(modelUrl: string): VoskEngine {
@@ -150,5 +158,18 @@ export function createVoskEngine(modelUrl: string): VoskEngine {
 
   const isModelLoaded = (): boolean => model !== null
 
-  return { loadModel, start, stop, isModelLoaded }
+  const dispose = async (): Promise<void> => {
+    await stop()
+    if (model) {
+      try {
+        model.terminate()
+      } catch {
+        // ignore
+      }
+      model = null
+    }
+    modelLoadPromise = null
+  }
+
+  return { loadModel, start, stop, isModelLoaded, dispose, modelUrl }
 }

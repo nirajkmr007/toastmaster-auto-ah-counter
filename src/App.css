@@ -1296,6 +1296,47 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+/* Accent model picker: two wide buttons rather than a select, so the size of
+   the download is visible before you commit to it. */
+.model-toggle {
+  display: flex;
+  gap: 8px;
+}
+.model-btn {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+  color: var(--text-h);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+.model-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.model-btn-on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  cursor: default;
+}
+.model-btn:disabled:not(.model-btn-on) {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.model-btn-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.model-btn-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
 .settings-toggle {
   display: flex;
   align-items: center;

@@ -7,6 +7,7 @@ import {
   MILD_BLOCKED_COUNT,
   STRONG_BLOCKED_COUNT,
 } from '../detection/profanity'
+import { MODELS, getModel, isModelAvailable } from '../audio/models'
 
 // Full CRUD manager for the effective filler-word list. Sounds are shown by
 // canonical label (deleting one drops all its spelling variants); crutch words
@@ -27,6 +28,9 @@ export function SettingsPanel() {
   const removeBlockedWord = useSessionStore((s) => s.removeBlockedWord)
   const maskMildWords = useSessionStore((s) => s.maskMildWords)
   const setMaskMildWords = useSessionStore((s) => s.setMaskMildWords)
+  const modelId = useSessionStore((s) => s.modelId)
+  const setModelId = useSessionStore((s) => s.setModelId)
+  const isListening = useSessionStore((s) => s.status === 'listening')
 
   const [soundInput, setSoundInput] = useState('')
   const [wordInput, setWordInput] = useState('')
@@ -107,6 +111,43 @@ export function SettingsPanel() {
               Changes apply live and are saved on this device. Sounds are
               always counted; words &amp; phrases follow the sensitivity rules.
             </p>
+
+            <div className="settings-group">
+              <div className="settings-group-head">
+                <span className="settings-group-title">Accent model</span>
+                <span className="settings-group-sub dim">
+                  Switching downloads a different speech model (one time, then
+                  cached by the browser) and clears the loaded one. Not possible
+                  while listening.
+                </span>
+              </div>
+              <div className="model-toggle">
+                {MODELS.map((m) => {
+                  const available = isModelAvailable(m)
+                  const selected = m.id === modelId
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className={`model-btn${selected ? ' model-btn-on' : ''}`}
+                      onClick={() => setModelId(m.id)}
+                      disabled={!available || isListening || selected}
+                      title={
+                        available
+                          ? m.note
+                          : 'Not configured yet — see scripts/repack-en-in-model.sh'
+                      }
+                    >
+                      <span className="model-btn-label">{m.label}</span>
+                      <span className="model-btn-sub">
+                        {available ? `~${m.approxSizeMb} MB` : 'not hosted yet'}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="settings-hint dim">{getModel(modelId).note}</p>
+            </div>
 
             <div className="settings-group">
               <div className="settings-group-head">

@@ -26,12 +26,24 @@ export const MASK = '***'
 /**
  * ── How this list was built ────────────────────────────────────────────────
  *
- * Every entry below was checked against the recognizer's actual vocabulary —
- * the 152,217-word symbol table inside `graph/Gr.fst` of
- * `vosk-model-small-en-us-0.15`. A word the model has no symbol for can never
- * be emitted, so listing it would be theatre. (Terms like "kike", "wetback",
- * "cocksucker" and "blowjob" are absent from that vocabulary and are therefore
- * absent here.) If the model is ever swapped, re-run that intersection.
+ * Every entry below was checked against the actual vocabularies of both
+ * shipped models — the symbol tables inside `graph/Gr.fst` of
+ * `vosk-model-small-en-us-0.15` (152,217 words) and
+ * `vosk-model-small-en-in-0.4` (72,551 words). A word no model has a symbol
+ * for can never be emitted, so listing it would be theatre; terms like "kike"
+ * and "wetback" are in neither vocabulary and are therefore absent here.
+ *
+ * The list is the UNION across models, so some entries are inert for one of
+ * them: `arsehole`, `blowjob`, `cocksucker`, `lund` and `randi` exist only in
+ * the en-IN vocabulary, and 62 of the entries below can't be emitted by en-IN.
+ * Inert entries cost nothing — a word the model can't say needs no masking.
+ *
+ * The two Hindi terms are there because en-IN carries them: `lund` (penis) and
+ * `randi` (prostitute). Notably, the harsher Hindi profanity — chutiya,
+ * madarchod, bhenchod, gaandu and similar — is absent from the en-IN
+ * vocabulary entirely, so it cannot be produced at all.
+ *
+ * Re-run `scripts/verify-model-vocab.py` whenever a model is added or swapped.
  *
  * Two tiers, because "offensive" and "vulgar" need different treatment:
  *
@@ -52,6 +64,11 @@ export const MASK = '***'
  *     `sucks`, `sex` (as in same-sex), `sperm` (sperm whale), `damning`.
  *   - Common given names and surnames: `dick`, `willy`, `fanny`, `coon`.
  *     Masking a member's name mid-transcript is its own embarrassment.
+ *   - Demonyms, which are not slurs: `bihari` is in the en-IN vocabulary and
+ *     stays unmasked — censoring what people call themselves would be worse
+ *     than the problem this filter solves. Same reasoning for `gora`.
+ *   - Hindi words too ambiguous to mask: `sala` (also a hall, and a surname),
+ *     `laude` (as in "magna cum laude").
  *   - Reclaimed identity terms (`queer`) — censoring those can offend more
  *     than leaving them.
  *   - Clinical terms with real medical use: `spastic`, `vaginal`.
@@ -71,37 +88,38 @@ export const MASK = '***'
  * see what they added themselves.
  */
 const STRONG_BLOCKED_WORDS: string[] = [
-  'anus', 'arse', 'arsed', 'ass', 'asses', 'asshole',
-  'assholes', 'badass', 'bastard', 'bastards', 'batshit', 'bdsm',
-  'bestiality', 'bimbo', 'bitch', 'bitched', 'bitches', 'bitching',
-  'bitchy', 'bollocks', 'boner', 'boobies', 'boobs', 'buggery',
-  'bullshit', 'bullshitter', 'chink', 'chinks', 'clusterfuck', 'cock',
-  'cocks', 'cretin', 'cretins', 'cum', 'cumming', 'cunt',
-  'dildo', 'douche', 'douchebag', 'dumbass', 'dyke', 'dykes',
-  'ejaculate', 'ejaculated', 'ejaculation', 'erotic', 'erotica', 'fag',
-  'faggot', 'faggots', 'fags', 'fart', 'farted', 'farting',
-  'farts', 'floozy', 'fuck', 'fucked', 'fucker', 'fuckers',
-  'fuckin', 'fucking', 'fucks', 'gook', 'gyp', 'gypped',
-  'homos', 'honky', 'hooker', 'hookers', 'horny', 'hussy',
-  'imbecile', 'imbeciles', 'incest', 'incestuous', 'jackass', 'masturbate',
-  'masturbating', 'masturbation', 'midget', 'midgets', 'minge', 'minger',
-  'molest', 'molestation', 'molested', 'molester', 'molesters', 'molesting',
-  'mongoloid', 'motherfucker', 'motherfuckers', 'nigga', 'niggaz', 'nigger',
-  'niggers', 'nipple', 'nipples', 'nude', 'nudes', 'orgasm',
-  'orgasmic', 'orgasms', 'paedo', 'paedophile', 'paedophiles', 'paedophilia',
-  'paki', 'pedophile', 'pedophiles', 'pedophilia', 'penis', 'penises',
-  'pimp', 'pimps', 'piss', 'pissed', 'pisses', 'pissing',
-  'pissy', 'poop', 'pooped', 'pooping', 'poopy', 'porn',
-  'porno', 'prat', 'prick', 'pricks', 'pussies', 'pussy',
-  'rape', 'raped', 'rapes', 'rapist', 'rapists', 'rectum',
-  'retard', 'retarded', 'retards', 'scrotum', 'scumbag', 'scumbags',
-  'semen', 'seminude', 'shit', 'shite', 'shithead', 'shitless',
-  'shittiest', 'shitting', 'shitty', 'skank', 'skanky', 'slut',
-  'sluts', 'slutty', 'smartass', 'sodomize', 'sodomized', 'sodomy',
-  'spic', 'striptease', 'testicle', 'testicles', 'threesome', 'tits',
-  'tosser', 'towelhead', 'tranny', 'turd', 'turds', 'twat',
-  'vagina', 'vaginas', 'viagra', 'vibrator', 'vibrators', 'wank',
-  'wanker', 'wankers', 'whore', 'whorehouse', 'whores', 'whoring',
+  'anus', 'arse', 'arsed', 'arsehole', 'ass', 'asses',
+  'asshole', 'assholes', 'badass', 'bastard', 'bastards', 'batshit',
+  'bdsm', 'bestiality', 'bimbo', 'bitch', 'bitched', 'bitches',
+  'bitching', 'bitchy', 'blowjob', 'bollocks', 'boner', 'boobies',
+  'boobs', 'buggery', 'bullshit', 'bullshitter', 'chink', 'chinks',
+  'clusterfuck', 'cock', 'cocks', 'cocksucker', 'cretin', 'cretins',
+  'cum', 'cumming', 'cunt', 'dildo', 'douche', 'douchebag',
+  'dumbass', 'dyke', 'dykes', 'ejaculate', 'ejaculated', 'ejaculation',
+  'erotic', 'erotica', 'fag', 'faggot', 'faggots', 'fags',
+  'fart', 'farted', 'farting', 'farts', 'floozy', 'fuck',
+  'fucked', 'fucker', 'fuckers', 'fuckin', 'fucking', 'fucks',
+  'gook', 'gyp', 'gypped', 'homos', 'honky', 'hooker',
+  'hookers', 'horny', 'hussy', 'imbecile', 'imbeciles', 'incest',
+  'incestuous', 'jackass', 'lund', 'masturbate', 'masturbating', 'masturbation',
+  'midget', 'midgets', 'minge', 'minger', 'molest', 'molestation',
+  'molested', 'molester', 'molesters', 'molesting', 'mongoloid', 'motherfucker',
+  'motherfuckers', 'nigga', 'niggaz', 'nigger', 'niggers', 'nipple',
+  'nipples', 'nude', 'nudes', 'orgasm', 'orgasmic', 'orgasms',
+  'paedo', 'paedophile', 'paedophiles', 'paedophilia', 'paki', 'pedophile',
+  'pedophiles', 'pedophilia', 'penis', 'penises', 'pimp', 'pimps',
+  'piss', 'pissed', 'pisses', 'pissing', 'pissy', 'poop',
+  'pooped', 'pooping', 'poopy', 'porn', 'porno', 'prat',
+  'prick', 'pricks', 'pussies', 'pussy', 'randi', 'rape',
+  'raped', 'rapes', 'rapist', 'rapists', 'rectum', 'retard',
+  'retarded', 'retards', 'scrotum', 'scumbag', 'scumbags', 'semen',
+  'seminude', 'shit', 'shite', 'shithead', 'shitless', 'shittiest',
+  'shitting', 'shitty', 'skank', 'skanky', 'slut', 'sluts',
+  'slutty', 'smartass', 'sodomize', 'sodomized', 'sodomy', 'spic',
+  'striptease', 'testicle', 'testicles', 'threesome', 'tits', 'tosser',
+  'towelhead', 'tranny', 'turd', 'turds', 'twat', 'vagina',
+  'vaginas', 'viagra', 'vibrator', 'vibrators', 'wank', 'wanker',
+  'wankers', 'whore', 'whorehouse', 'whores', 'whoring',
 ]
 
 /** Crude but ordinary in speech — masked unless the user turns this tier off. */

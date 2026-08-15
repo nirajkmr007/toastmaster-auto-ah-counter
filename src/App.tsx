@@ -12,7 +12,7 @@ import { useSessionStore } from './store'
 import { createDetector, type Detector } from './detection/detector'
 import { buildBlockedSet, maskProfanity } from './detection/profanity'
 import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
-import { MODEL_URL } from './audio/models'
+import { getModel } from './audio/models'
 import './App.css'
 
 const FREQUENCY_WINDOW_MS = 30_000
@@ -38,6 +38,7 @@ function App() {
   const openTour = useSessionStore((s) => s.openTour)
   const status = useSessionStore((s) => s.status)
   const hardStopMs = useSessionStore((s) => s.hardStopMs)
+  const modelId = useSessionStore((s) => s.modelId)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
   const hasData = useSessionStore((s) =>
     s.speakers.some(
@@ -48,7 +49,8 @@ function App() {
     )
   )
 
-  if (!engineRef.current) engineRef.current = createVoskEngine(MODEL_URL)
+  if (!engineRef.current)
+    engineRef.current = createVoskEngine(getModel(modelId).url)
 
   // Recognizer A's transcript is scanned for CRUTCH words only — sound fillers
   // come from recognizer B. So the detector runs with an empty sound list.
@@ -80,6 +82,19 @@ function App() {
       }
     }
   }, [])
+
+  // Swapping the model means a different Web Worker and a different download,
+  // so tear the old engine down rather than leaking its ~300 MB of runtime
+  // memory. The settings toggle is disabled while listening, so this only
+  // fires between sessions.
+  useEffect(() => {
+    const wanted = getModel(modelId).url
+    const engine = engineRef.current
+    if (!engine || engine.modelUrl === wanted) return
+    void engine.dispose()
+    engineRef.current = createVoskEngine(wanted)
+    setStatus('idle')
+  }, [modelId, setStatus])
 
   // Auto-open the guided tour on a visitor's first landing.
   useEffect(() => {
