@@ -330,6 +330,8 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 .transcript-col-collapsed > .pane {
   flex: none;
@@ -372,15 +374,34 @@
 }
 
 /* Roomier tap targets when this card owns the column. */
+/* Transcript collapsed: this card owns the column, so the buttons grow into the
+   space instead of leaving it blank. Growth is proportional to the viewport
+   height and hard-capped at 2x the normal size (12px -> 24px text,
+   5px/10px -> 10px/20px padding) — past that they stop being buttons and start
+   being billboards. The two rows share the freed height and centre their
+   contents, so nothing pools at the top. */
 .manual-add-roomy {
   gap: 14px;
+  justify-content: stretch;
 }
-.manual-add-roomy .manual-btn {
-  font-size: 14px;
-  padding: 9px 15px;
+.manual-add-roomy .manual-add-row {
+  flex: 1 1 0;
+  min-height: 0;
+  align-items: flex-start;
 }
 .manual-add-roomy .manual-add-buttons {
-  gap: 8px;
+  flex: 1 1 auto;
+  gap: clamp(6px, 1.1vh, 12px);
+  align-content: center;
+  align-self: stretch;
+}
+.manual-add-roomy .manual-btn {
+  font-size: clamp(14px, 2.1vh, 24px);
+  padding: clamp(6px, 1.1vh, 10px) clamp(12px, 2vh, 20px);
+  border-radius: 10px;
+}
+.manual-add-roomy .custom-word {
+  flex: none;
 }
 
 .pane {
