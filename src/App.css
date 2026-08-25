@@ -53,6 +53,15 @@
   background: var(--bg-elev-2);
   transform: rotate(30deg);
 }
+/* The theme glyph reads as a dial, so spinning it on hover is confusing. */
+.theme-btn {
+  font-size: 15px;
+  color: var(--text-dim);
+}
+.theme-btn:hover {
+  transform: none;
+  color: var(--text-h);
+}
 .brand h1 {
   font-size: 22px;
   letter-spacing: -0.02em;
@@ -97,7 +106,7 @@
 }
 .timer-live .timer-dot {
   background: var(--success);
-  box-shadow: 0 0 8px rgba(82, 214, 147, 0.7);
+  box-shadow: 0 0 8px var(--success);
   animation: timer-pulse 1.4s ease-in-out infinite;
 }
 @keyframes timer-pulse {
@@ -239,14 +248,14 @@
 }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 6px 20px var(--stop-glow); }
-  50%      { box-shadow: 0 6px 28px rgba(255, 92, 124, 0.55); }
+  50%      { box-shadow: 0 6px 28px var(--stop-glow); }
 }
 
 .error-banner {
   padding: 10px 14px;
   border-radius: 8px;
-  background: rgba(255, 107, 107, 0.12);
-  border: 1px solid rgba(255, 107, 107, 0.4);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-line);
   color: var(--danger);
   font-size: 13px;
 }
@@ -518,7 +527,7 @@
 }
 .bubble-step:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--wash);
 }
 .bubble-step:active {
   transform: scale(0.88);
@@ -562,7 +571,7 @@
 }
 .tx-hit:hover {
   color: var(--stop);
-  background: rgba(255, 92, 124, 0.12);
+  background: var(--stop-soft);
   border-color: var(--stop);
   text-decoration: line-through;
 }
@@ -668,7 +677,7 @@
 .report-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: var(--scrim);
   backdrop-filter: blur(6px);
   z-index: 100;
   display: flex;
@@ -678,7 +687,7 @@
   overflow-y: auto;
 }
 .report-card {
-  background: linear-gradient(180deg, #16181f 0%, #0f1218 100%);
+  background: linear-gradient(180deg, var(--card-top) 0%, var(--card-bottom) 100%);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 32px;
@@ -687,8 +696,8 @@
   max-height: 90vh;
   overflow-y: auto;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(124, 92, 255, 0.15) inset;
+    var(--shadow-lg),
+    0 0 0 1px var(--accent-inset) inset;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -762,7 +771,7 @@
   margin: 0;
   padding: 14px 16px;
   border-left: 3px solid var(--accent);
-  background: rgba(124, 92, 255, 0.08);
+  background: var(--accent-soft);
   border-radius: 4px;
   color: var(--text-h);
   font-size: 14px;
@@ -931,7 +940,7 @@
   height: 8px;
   border-radius: 50%;
   background: var(--success);
-  box-shadow: 0 0 8px rgba(82, 214, 147, 0.8);
+  box-shadow: 0 0 8px var(--success);
   animation: timer-pulse 1.4s ease-in-out infinite;
 }
 .chip-name {
@@ -1088,20 +1097,20 @@
   border-color: var(--success);
   color: var(--success);
 }
-.timer-green .timer-dot { background: var(--success); box-shadow: 0 0 8px rgba(82, 214, 147, 0.7); }
+.timer-green .timer-dot { background: var(--success); box-shadow: 0 0 8px var(--success); }
 .timer-green .timer-elapsed { color: var(--success); }
 .timer-yellow {
-  border-color: #e6c34a;
-  color: #e6c34a;
+  border-color: var(--warn);
+  color: var(--warn);
 }
-.timer-yellow .timer-dot { background: #e6c34a; box-shadow: 0 0 8px rgba(230, 195, 74, 0.7); }
-.timer-yellow .timer-elapsed { color: #e6c34a; }
+.timer-yellow .timer-dot { background: var(--warn); box-shadow: 0 0 8px var(--warn-glow); }
+.timer-yellow .timer-elapsed { color: var(--warn); }
 .timer-red {
   border-color: var(--stop);
   color: var(--stop);
-  box-shadow: 0 0 12px rgba(255, 92, 124, 0.25);
+  box-shadow: 0 0 12px var(--stop-glow);
 }
-.timer-red .timer-dot { background: var(--stop); box-shadow: 0 0 10px rgba(255, 92, 124, 0.9); animation: timer-pulse 0.6s ease-in-out infinite; }
+.timer-red .timer-dot { background: var(--stop); box-shadow: 0 0 10px var(--stop-glow); animation: timer-pulse 0.6s ease-in-out infinite; }
 .timer-red .timer-elapsed { color: var(--stop); }
 
 /* ---- app footer flex ---- */
@@ -1149,7 +1158,7 @@
 .report-speaker-summary code {
   font-family: var(--mono);
   color: var(--text-h);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--wash-soft);
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 12px;
@@ -1168,13 +1177,13 @@
 .tour-dim {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--scrim);
 }
 .tour-spotlight {
   position: fixed;
   border-radius: 12px;
   border: 2px solid var(--accent);
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 0 9999px var(--scrim);
   pointer-events: none;
   transition: top 0.25s, left 0.25s, width 0.25s, height 0.25s;
 }
@@ -1186,7 +1195,7 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 18px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   z-index: 201;
 }
 .tour-card-centered {

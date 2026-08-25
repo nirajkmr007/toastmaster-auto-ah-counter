@@ -1,4 +1,14 @@
-:root {
+/*
+ * Three themes, selected by data-theme on <html> (see store.theme).
+ *
+ * Every surface, text and effect colour is a variable so a theme is a
+ * one-block change. The non-obvious ones are the last five: washes, scrims and
+ * shadows can't be hardcoded rgba(255,255,255,…) / rgba(0,0,0,…) because a
+ * white wash vanishes on a white page and a heavy black shadow looks like dirt
+ * on one. They flip per theme instead.
+ */
+:root,
+[data-theme='dark'] {
   --bg: #0d0f14;
   --bg-elev: #151821;
   --bg-elev-2: #1c202b;
@@ -8,15 +18,112 @@
   --text-h: #f5f6fa;
   --accent: #7c5cff;
   --accent-glow: rgba(124, 92, 255, 0.35);
+  --accent-soft: rgba(124, 92, 255, 0.08);
+  --accent-inset: rgba(124, 92, 255, 0.15);
+  --accent-bg: rgba(124, 92, 255, 0.16);
+  --accent-border: rgba(124, 92, 255, 0.45);
   --stop: #ff5c7c;
   --stop-glow: rgba(255, 92, 124, 0.35);
+  --stop-soft: rgba(255, 92, 124, 0.12);
   --success: #52d693;
   --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.12);
+  --danger-line: rgba(255, 107, 107, 0.4);
+  --warn: #e6c34a;
+  --warn-glow: rgba(230, 195, 74, 0.7);
 
+  --wash: rgba(255, 255, 255, 0.12);
+  --wash-soft: rgba(255, 255, 255, 0.08);
+  --scrim: rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --card-top: #16181f;
+  --card-bottom: #0f1218;
+  --page-glow-1: rgba(124, 92, 255, 0.15);
+  --page-glow-2: rgba(255, 92, 124, 0.1);
+
+  color-scheme: dark;
+}
+
+/* Medium — a mid slate, for rooms where near-black is too harsh and white is
+   too bright. Projector-friendly. */
+[data-theme='dim'] {
+  --bg: #232733;
+  --bg-elev: #2b303e;
+  --bg-elev-2: #343a4b;
+  --border: #414859;
+  --text: #dfe3ec;
+  --text-dim: #a0a7b8;
+  --text-h: #ffffff;
+  --accent: #9179ff;
+  --accent-glow: rgba(145, 121, 255, 0.35);
+  --accent-soft: rgba(145, 121, 255, 0.12);
+  --accent-inset: rgba(145, 121, 255, 0.18);
+  --accent-bg: rgba(145, 121, 255, 0.18);
+  --accent-border: rgba(145, 121, 255, 0.5);
+  --stop: #ff7089;
+  --stop-glow: rgba(255, 112, 137, 0.35);
+  --stop-soft: rgba(255, 112, 137, 0.14);
+  --success: #5fdd9d;
+  --danger: #ff7d7d;
+  --danger-soft: rgba(255, 125, 125, 0.14);
+  --danger-line: rgba(255, 125, 125, 0.45);
+  --warn: #edcb5c;
+  --warn-glow: rgba(237, 203, 92, 0.6);
+
+  --wash: rgba(255, 255, 255, 0.1);
+  --wash-soft: rgba(255, 255, 255, 0.06);
+  --scrim: rgba(10, 12, 16, 0.6);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+  --card-top: #2e3341;
+  --card-bottom: #262b37;
+  --page-glow-1: rgba(145, 121, 255, 0.1);
+  --page-glow-2: rgba(255, 112, 137, 0.07);
+
+  color-scheme: dark;
+}
+
+/* Light — accent and status colours are darkened, since the dark theme's
+   values don't carry enough contrast against white. */
+[data-theme='light'] {
+  --bg: #f5f6fa;
+  --bg-elev: #ffffff;
+  --bg-elev-2: #eef0f7;
+  --border: #d5dae7;
+  --text: #333a49;
+  --text-dim: #6d7688;
+  --text-h: #14171f;
+  --accent: #5b3fd6;
+  --accent-glow: rgba(91, 63, 214, 0.25);
+  --accent-soft: rgba(91, 63, 214, 0.08);
+  --accent-inset: rgba(91, 63, 214, 0.12);
+  --accent-bg: rgba(91, 63, 214, 0.1);
+  --accent-border: rgba(91, 63, 214, 0.35);
+  --stop: #d93a5e;
+  --stop-glow: rgba(217, 58, 94, 0.25);
+  --stop-soft: rgba(217, 58, 94, 0.1);
+  --success: #12855a;
+  --danger: #cf3d3d;
+  --danger-soft: rgba(207, 61, 61, 0.1);
+  --danger-line: rgba(207, 61, 61, 0.35);
+  --warn: #9a6b06;
+  --warn-glow: rgba(154, 107, 6, 0.4);
+
+  --wash: rgba(20, 23, 31, 0.08);
+  --wash-soft: rgba(20, 23, 31, 0.05);
+  --scrim: rgba(28, 32, 42, 0.45);
+  --shadow-lg: 0 20px 50px rgba(28, 32, 42, 0.18);
+  --card-top: #ffffff;
+  --card-bottom: #f7f8fc;
+  --page-glow-1: rgba(91, 63, 214, 0.07);
+  --page-glow-2: rgba(217, 58, 94, 0.05);
+
+  color-scheme: light;
+}
+
+:root {
   --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, 'JetBrains Mono', Consolas, monospace;
 
-  color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   font: 15px/1.5 var(--sans);
@@ -41,8 +148,8 @@ body,
 body {
   min-height: 100vh;
   background:
-    radial-gradient(1200px 600px at 20% -10%, rgba(124, 92, 255, 0.15), transparent 60%),
-    radial-gradient(1000px 500px at 100% 100%, rgba(255, 92, 124, 0.1), transparent 60%),
+    radial-gradient(1200px 600px at 20% -10%, var(--page-glow-1), transparent 60%),
+    radial-gradient(1000px 500px at 100% 100%, var(--page-glow-2), transparent 60%),
     var(--bg);
 }
 

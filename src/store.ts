@@ -5,6 +5,7 @@ import { canonicalFiller } from './detection/detector'
 import { TOASTMASTERS_CLASSIC } from './detection/presets'
 import { normalizeBlockedWord } from './detection/profanity'
 import { DEFAULT_MODEL_ID } from './audio/models'
+import { DEFAULT_THEME, applyTheme, type ThemeId } from './theme'
 
 export type FillerGroup = 'sound' | 'word'
 
@@ -58,6 +59,8 @@ export interface SessionState {
   // card, for operators who tap counts and don't want to read along.
   transcriptCollapsed: boolean
 
+  theme: ThemeId
+
   speakers: Speaker[]
   activeSpeakerId: string | null
 
@@ -81,6 +84,7 @@ export interface SessionState {
   setMaskMildWords: (on: boolean) => void
   setModelId: (id: string) => void
   toggleTranscript: () => void
+  setTheme: (id: ThemeId) => void
   setLoadingMessage: (msg: string | null) => void
 
   addFiller: (word: string, group: FillerGroup) => void
@@ -157,6 +161,7 @@ export const useSessionStore = create<SessionState>()(
       maskMildWords: true,
       modelId: DEFAULT_MODEL_ID,
       transcriptCollapsed: false,
+      theme: DEFAULT_THEME,
 
       speakers: [],
       activeSpeakerId: null,
@@ -206,6 +211,12 @@ export const useSessionStore = create<SessionState>()(
       setModelId: (modelId) => set({ modelId }),
       toggleTranscript: () =>
         set((state) => ({ transcriptCollapsed: !state.transcriptCollapsed })),
+      // Applied immediately as well as stored, so the paint doesn't wait on a
+      // React render pass.
+      setTheme: (theme) => {
+        applyTheme(theme)
+        set({ theme })
+      },
 
       addFiller: (raw, group) =>
         set((state) => {
@@ -457,6 +468,7 @@ export const useSessionStore = create<SessionState>()(
         maskMildWords: s.maskMildWords,
         modelId: s.modelId,
         transcriptCollapsed: s.transcriptCollapsed,
+        theme: s.theme,
       }),
       // v3 dropped the old `blockedWords` key, which stored the built-in
       // profanity list in localStorage. The built-ins now live in code only.

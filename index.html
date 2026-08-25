@@ -5,6 +5,19 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>toastmaster-auto-ah-counter</title>
+    <script>
+      // Apply the saved theme before first paint. Without this, a light-theme
+      // user sees a black flash on every load while React boots. Reads the same
+      // persisted zustand config the app writes; any failure just leaves the
+      // CSS default (dark) in place.
+      try {
+        var saved = JSON.parse(localStorage.getItem('ah-counter-config') || '{}')
+        var t = saved && saved.state && saved.state.theme
+        if (t === 'dark' || t === 'dim' || t === 'light') {
+          document.documentElement.dataset.theme = t
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

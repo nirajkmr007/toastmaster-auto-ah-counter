@@ -13,6 +13,7 @@ import { createDetector, type Detector } from './detection/detector'
 import { buildBlockedSet, maskProfanity } from './detection/profanity'
 import { createVoskEngine, type VoskEngine } from './audio/voskEngine'
 import { getModel } from './audio/models'
+import { applyTheme, getTheme, nextTheme } from './theme'
 import './App.css'
 
 const FREQUENCY_WINDOW_MS = 30_000
@@ -40,6 +41,8 @@ function App() {
   const hardStopMs = useSessionStore((s) => s.hardStopMs)
   const modelId = useSessionStore((s) => s.modelId)
   const transcriptCollapsed = useSessionStore((s) => s.transcriptCollapsed)
+  const theme = useSessionStore((s) => s.theme)
+  const setTheme = useSessionStore((s) => s.setTheme)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
   const hasData = useSessionStore((s) =>
     s.speakers.some(
@@ -96,6 +99,13 @@ function App() {
     engineRef.current = createVoskEngine(wanted)
     setStatus('idle')
   }, [modelId, setStatus])
+
+  // index.html applies the saved theme before React mounts to avoid a flash of
+  // the wrong palette; this re-asserts it once the store has rehydrated, which
+  // covers the case where that inline script couldn't read localStorage.
+  useEffect(() => {
+    applyTheme(theme)
+  }, [theme])
 
   // Auto-open the guided tour on a visitor's first landing.
   useEffect(() => {
@@ -232,6 +242,19 @@ function App() {
           </div>
           <div className="brand-right">
             <Timer />
+            <button
+              type="button"
+              className="gear-btn theme-btn"
+              onClick={() => setTheme(nextTheme(theme))}
+              aria-label={`Theme: ${getTheme(theme).label}. Switch to ${
+                getTheme(nextTheme(theme)).label
+              }`}
+              title={`Theme: ${getTheme(theme).label} — click for ${getTheme(
+                nextTheme(theme)
+              ).label}`}
+            >
+              {getTheme(theme).glyph}
+            </button>
             <button
               type="button"
               className="gear-btn"
