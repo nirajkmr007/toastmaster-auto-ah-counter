@@ -20,6 +20,9 @@ export function ManualAdd() {
   const wordList = useSessionStore((s) => s.wordList)
   const addManualDetection = useSessionStore((s) => s.addManualDetection)
   const addFiller = useSessionStore((s) => s.addFiller)
+  // With the transcript collapsed this card owns the column, so the buttons
+  // get bigger — the whole point of collapsing is easier tapping.
+  const roomy = useSessionStore((s) => s.transcriptCollapsed)
   const [custom, setCustom] = useState('')
 
   const sounds = useMemo(() => soundAddWords(wordList), [wordList])
@@ -33,7 +36,10 @@ export function ManualAdd() {
   }
 
   return (
-    <div className="manual-add" data-tour="manual">
+    <div
+      className={`manual-add${roomy ? ' manual-add-roomy' : ''}`}
+      data-tour="manual"
+    >
       <div className="manual-add-label">
         {active ? (
           <>

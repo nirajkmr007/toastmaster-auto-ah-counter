@@ -39,6 +39,7 @@ function App() {
   const status = useSessionStore((s) => s.status)
   const hardStopMs = useSessionStore((s) => s.hardStopMs)
   const modelId = useSessionStore((s) => s.modelId)
+  const transcriptCollapsed = useSessionStore((s) => s.transcriptCollapsed)
   const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
   const hasData = useSessionStore((s) =>
     s.speakers.some(
@@ -263,7 +264,11 @@ function App() {
           <FillerPane kind="crutch" />
           <FillerPane kind="sound" />
         </div>
-        <div className="transcript-col">
+        <div
+          className={`transcript-col${
+            transcriptCollapsed ? ' transcript-col-collapsed' : ''
+          }`}
+        >
           <ManualAdd />
           <TranscriptPane />
         </div>

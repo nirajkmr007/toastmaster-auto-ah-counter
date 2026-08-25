@@ -282,6 +282,11 @@
   .app-main .pane {
     min-height: 280px;
   }
+  /* ...except a collapsed pane, which must be allowed to shrink to its header
+     or the whole point of collapsing is lost on mobile. */
+  .app-main .pane.pane-collapsed {
+    min-height: 0;
+  }
   .fillers-col > .filler-pane,
   .transcript-col > .pane {
     flex: none;
@@ -308,6 +313,65 @@
 .transcript-col > .pane {
   flex: 1 1 auto;
   min-height: 0;
+}
+
+/* Transcript collapsed: the pane shrinks to its header and the manual-add card
+   takes the whole column. */
+.transcript-col-collapsed > .manual-add {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.transcript-col-collapsed > .pane {
+  flex: none;
+}
+.pane-collapsed {
+  padding-bottom: 20px;
+}
+.pane-collapsed .pane-header {
+  margin-bottom: 0;
+}
+
+.pane-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.pane-collapsed-hint {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.pane-toggle {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.pane-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text-h);
+}
+
+/* Roomier tap targets when this card owns the column. */
+.manual-add-roomy {
+  gap: 14px;
+}
+.manual-add-roomy .manual-btn {
+  font-size: 14px;
+  padding: 9px 15px;
+}
+.manual-add-roomy .manual-add-buttons {
+  gap: 8px;
 }
 
 .pane {

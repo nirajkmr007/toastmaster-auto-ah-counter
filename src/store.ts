@@ -54,6 +54,10 @@ export interface SessionState {
   // means a fresh model download, so it's blocked while listening.
   modelId: string
 
+  // Collapsed transcript: hands the right column's space to the manual-add
+  // card, for operators who tap counts and don't want to read along.
+  transcriptCollapsed: boolean
+
   speakers: Speaker[]
   activeSpeakerId: string | null
 
@@ -76,6 +80,7 @@ export interface SessionState {
   removeBlockedWord: (word: string) => void
   setMaskMildWords: (on: boolean) => void
   setModelId: (id: string) => void
+  toggleTranscript: () => void
   setLoadingMessage: (msg: string | null) => void
 
   addFiller: (word: string, group: FillerGroup) => void
@@ -151,6 +156,7 @@ export const useSessionStore = create<SessionState>()(
       extraBlockedWords: [],
       maskMildWords: true,
       modelId: DEFAULT_MODEL_ID,
+      transcriptCollapsed: false,
 
       speakers: [],
       activeSpeakerId: null,
@@ -198,6 +204,8 @@ export const useSessionStore = create<SessionState>()(
       },
       setMaskMildWords: (maskMildWords) => set({ maskMildWords }),
       setModelId: (modelId) => set({ modelId }),
+      toggleTranscript: () =>
+        set((state) => ({ transcriptCollapsed: !state.transcriptCollapsed })),
 
       addFiller: (raw, group) =>
         set((state) => {
@@ -448,6 +456,7 @@ export const useSessionStore = create<SessionState>()(
         extraBlockedWords: s.extraBlockedWords,
         maskMildWords: s.maskMildWords,
         modelId: s.modelId,
+        transcriptCollapsed: s.transcriptCollapsed,
       }),
       // v3 dropped the old `blockedWords` key, which stored the built-in
       // profanity list in localStorage. The built-ins now live in code only.

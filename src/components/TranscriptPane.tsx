@@ -4,6 +4,8 @@ import { useSessionStore, selectActiveSpeaker } from '../store'
 export function TranscriptPane() {
   const active = useSessionStore(selectActiveSpeaker)
   const removeDetectionById = useSessionStore((s) => s.removeDetectionById)
+  const collapsed = useSessionStore((s) => s.transcriptCollapsed)
+  const toggleTranscript = useSessionStore((s) => s.toggleTranscript)
   const transcript = active?.transcript ?? []
   const partialText = active?.partialText ?? ''
   const detectionLog = active?.detectionLog
@@ -35,12 +37,41 @@ export function TranscriptPane() {
   }, [transcript, partialText])
 
   return (
-    <div className="pane transcript-pane" data-tour="transcript">
+    <div
+      className={`pane transcript-pane${collapsed ? ' pane-collapsed' : ''}`}
+      data-tour="transcript"
+    >
       <div className="pane-header">
         <h2>Transcript</h2>
-        {active ? <span className="speaker-tag">{active.name}</span> : null}
+        <div className="pane-header-right">
+          {collapsed && transcript.length > 0 ? (
+            <span className="dim pane-collapsed-hint">
+              {transcript.length} line{transcript.length === 1 ? '' : 's'} hidden
+            </span>
+          ) : null}
+          {active ? <span className="speaker-tag">{active.name}</span> : null}
+          <button
+            type="button"
+            className="pane-toggle"
+            onClick={toggleTranscript}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? 'Show transcript' : 'Hide transcript'}
+            title={
+              collapsed
+                ? 'Show the transcript'
+                : 'Hide the transcript and give the space to the tap-to-add buttons'
+            }
+          >
+            {collapsed ? '▢' : '▁'}
+          </button>
+        </div>
       </div>
 
+      {/* Collapsed: the scroller is unmounted rather than hidden, so the pane
+          shrinks to its header and the flex column hands the freed space to
+          the manual-add card. Transcript text lives in the store either way,
+          so nothing is lost and the report is unaffected. */}
+      {collapsed ? null : (
       <div className="transcript-scroll" ref={scrollRef}>
         {!active ? (
           <p className="empty-state dim">Add a speaker to begin.</p>
@@ -81,6 +112,7 @@ export function TranscriptPane() {
           </>
         )}
       </div>
+      )}
     </div>
   )
 }
