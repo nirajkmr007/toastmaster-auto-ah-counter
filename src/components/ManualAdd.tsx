@@ -28,6 +28,27 @@ export function ManualAdd() {
   const sounds = useMemo(() => soundAddWords(wordList), [wordList])
   const words = useMemo(() => crutchAddWords(wordList), [wordList])
 
+  // Size the buttons from how many there are, so adding fillers shrinks them to
+  // fit instead of pushing the last row out of the card.
+  //
+  // A button's footprint grows with the square of its font size, and the space
+  // available is fixed — so size scales with 1/sqrt(count). The constant is
+  // picked so the default list (~24 entries) lands near the normal 12px and a
+  // short list reaches the 24px ceiling, i.e. never more than 2x normal.
+  // Padding and gap are derived from the font size, which keeps the 2x cap
+  // holding for the whole button, not just its text.
+  const roomyStyle = useMemo(() => {
+    if (!roomy) return undefined
+    const count = Math.max(sounds.length + words.length, 1)
+    const font = Math.round(Math.min(24, Math.max(12, 66 / Math.sqrt(count))))
+    return {
+      '--mbtn-font': `${font}px`,
+      '--mbtn-pad-y': `${Math.round(font * 0.42)}px`,
+      '--mbtn-pad-x': `${Math.round(font * 0.83)}px`,
+      '--mbtn-gap': `${Math.round(font * 0.5)}px`,
+    } as React.CSSProperties
+  }, [roomy, sounds.length, words.length])
+
   const submit = (group: 'sound' | 'word') => {
     const w = custom.trim()
     if (!w) return
@@ -38,6 +59,7 @@ export function ManualAdd() {
   return (
     <div
       className={`manual-add${roomy ? ' manual-add-roomy' : ''}`}
+      style={roomyStyle}
       data-tour="manual"
     >
       <div className="manual-add-label">
@@ -52,7 +74,12 @@ export function ManualAdd() {
         )}
       </div>
 
-      <div className="manual-add-row">
+      {/* Rows grow in proportion to how many buttons they hold, so a short
+          Sounds row doesn't reserve half the card while Words overflows. */}
+      <div
+        className="manual-add-row"
+        style={roomy ? { flexGrow: Math.max(sounds.length, 1) } : undefined}
+      >
         <span className="manual-add-kind">Sounds</span>
         <div className="manual-add-buttons">
           {sounds.map((w) => (
@@ -70,7 +97,10 @@ export function ManualAdd() {
         </div>
       </div>
 
-      <div className="manual-add-row">
+      <div
+        className="manual-add-row"
+        style={roomy ? { flexGrow: Math.max(words.length, 1) } : undefined}
+      >
         <span className="manual-add-kind">Words</span>
         <div className="manual-add-buttons">
           {words.map((w) => (

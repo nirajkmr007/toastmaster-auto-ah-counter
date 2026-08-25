@@ -384,24 +384,36 @@
   gap: 14px;
   justify-content: stretch;
 }
+/* flex-grow comes from the item count (set inline in ManualAdd), so the basis
+   is 0 and the rows divide the height by how much they actually hold. */
 .manual-add-roomy .manual-add-row {
-  flex: 1 1 0;
+  flex-basis: 0;
+  flex-shrink: 1;
   min-height: 0;
   align-items: flex-start;
 }
 .manual-add-roomy .manual-add-buttons {
   flex: 1 1 auto;
-  gap: clamp(6px, 1.1vh, 12px);
+  gap: var(--mbtn-gap, 8px);
   align-content: center;
   align-self: stretch;
 }
+/* Sizes come from --mbtn-*, computed per render from the number of buttons.
+   The fallbacks keep this sane if the inline vars are ever absent. */
 .manual-add-roomy .manual-btn {
-  font-size: clamp(14px, 2.1vh, 24px);
-  padding: clamp(6px, 1.1vh, 10px) clamp(12px, 2vh, 20px);
+  font-size: var(--mbtn-font, 14px);
+  padding: var(--mbtn-pad-y, 6px) var(--mbtn-pad-x, 12px);
   border-radius: 10px;
 }
+/* Past ~30 buttons even the minimum size can't fit and the card scrolls. Pin
+   the input to the bottom so it stays reachable instead of scrolling away —
+   that was what made the old layout look truncated. */
 .manual-add-roomy .custom-word {
   flex: none;
+  position: sticky;
+  bottom: 0;
+  background: var(--bg-elev);
+  padding-top: 8px;
 }
 
 .pane {
