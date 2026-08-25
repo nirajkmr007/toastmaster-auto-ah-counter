@@ -44,42 +44,45 @@
   color-scheme: dark;
 }
 
-/* Medium — a mid slate, for rooms where near-black is too harsh and white is
-   too bright. Projector-friendly. */
-[data-theme='dim'] {
-  --bg: #232733;
-  --bg-elev: #2b303e;
-  --bg-elev-2: #343a4b;
-  --border: #414859;
-  --text: #dfe3ec;
-  --text-dim: #a0a7b8;
-  --text-h: #ffffff;
-  --accent: #9179ff;
-  --accent-glow: rgba(145, 121, 255, 0.35);
-  --accent-soft: rgba(145, 121, 255, 0.12);
-  --accent-inset: rgba(145, 121, 255, 0.18);
-  --accent-bg: rgba(145, 121, 255, 0.18);
-  --accent-border: rgba(145, 121, 255, 0.5);
-  --stop: #ff7089;
-  --stop-glow: rgba(255, 112, 137, 0.35);
-  --stop-soft: rgba(255, 112, 137, 0.14);
-  --success: #5fdd9d;
-  --danger: #ff7d7d;
-  --danger-soft: rgba(255, 125, 125, 0.14);
-  --danger-line: rgba(255, 125, 125, 0.45);
-  --warn: #edcb5c;
-  --warn-glow: rgba(237, 203, 92, 0.6);
+/* Warm — paper and ink. Cream surfaces, brown text, terracotta accent. Easier
+   on the eyes than white for long meetings, and unlike the mid-slate it
+   replaced it doesn't read as "unfinished dark theme". Every hue here is pulled
+   toward orange/red, including the neutrals — a warm theme with a grey border
+   looks broken. */
+[data-theme='warm'] {
+  --bg: #f4ece0;
+  --bg-elev: #fdf8f1;
+  --bg-elev-2: #ece1d2;
+  --border: #d9c8b4;
+  --text: #4a3b2e;
+  --text-dim: #8a7761;
+  --text-h: #2c211a;
+  --accent: #b3541e;
+  --accent-glow: rgba(179, 84, 30, 0.25);
+  --accent-soft: rgba(179, 84, 30, 0.08);
+  --accent-inset: rgba(179, 84, 30, 0.14);
+  --accent-bg: rgba(179, 84, 30, 0.12);
+  --accent-border: rgba(179, 84, 30, 0.4);
+  --stop: #b8323f;
+  --stop-glow: rgba(184, 50, 63, 0.25);
+  --stop-soft: rgba(184, 50, 63, 0.1);
+  --success: #5a7c26;
+  --danger: #b3402f;
+  --danger-soft: rgba(179, 64, 47, 0.1);
+  --danger-line: rgba(179, 64, 47, 0.35);
+  --warn: #96690a;
+  --warn-glow: rgba(150, 105, 10, 0.4);
 
-  --wash: rgba(255, 255, 255, 0.1);
-  --wash-soft: rgba(255, 255, 255, 0.06);
-  --scrim: rgba(10, 12, 16, 0.6);
-  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
-  --card-top: #2e3341;
-  --card-bottom: #262b37;
-  --page-glow-1: rgba(145, 121, 255, 0.1);
-  --page-glow-2: rgba(255, 112, 137, 0.07);
+  --wash: rgba(74, 59, 46, 0.1);
+  --wash-soft: rgba(74, 59, 46, 0.06);
+  --scrim: rgba(44, 33, 26, 0.45);
+  --shadow-lg: 0 20px 50px rgba(74, 59, 46, 0.2);
+  --card-top: #fdf8f1;
+  --card-bottom: #f6eee2;
+  --page-glow-1: rgba(179, 84, 30, 0.08);
+  --page-glow-2: rgba(184, 50, 63, 0.05);
 
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 /* Light — accent and status colours are darkened, since the dark theme's
