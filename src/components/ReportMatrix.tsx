@@ -38,6 +38,15 @@ interface Props {
   pivoted: boolean
 }
 
+/*
+ * A note on keys: every key below is index-based, not label-based.
+ *
+ * Labels are not unique — two speakers can share a name — and duplicate keys
+ * break React's reconciliation outright: switching orientation left stale cells
+ * from the previous render trailing past the Total column. Indices are stable
+ * within a render and unique by construction, and the orientation switch
+ * rebuilds the table anyway, so there is nothing for keys to preserve.
+ */
 export function ReportMatrix({ matrix, pivoted }: Props) {
   const { speakers, words, counts, speakerTotals, wordTotals, grandTotal, max } =
     matrix
@@ -65,8 +74,8 @@ export function ReportMatrix({ matrix, pivoted }: Props) {
             <th className="matrix-corner" scope="col">
               {pivoted ? 'Filler' : 'Speaker'}
             </th>
-            {colLabels.map((label) => (
-              <th key={label} scope="col" className="matrix-col-head">
+            {colLabels.map((label, i) => (
+              <th key={i} scope="col" className="matrix-col-head">
                 <span>{label}</span>
               </th>
             ))}
@@ -77,7 +86,7 @@ export function ReportMatrix({ matrix, pivoted }: Props) {
         </thead>
         <tbody>
           {rowLabels.map((label, r) => (
-            <tr key={label}>
+            <tr key={r}>
               <th scope="row" className="matrix-row-head">
                 {label}
               </th>
@@ -85,7 +94,7 @@ export function ReportMatrix({ matrix, pivoted }: Props) {
                 const n = at(r, c)
                 return (
                   <td
-                    key={col}
+                    key={c}
                     className={n > 0 ? 'matrix-cell' : 'matrix-cell matrix-zero'}
                     style={heat(n, max)}
                     title={
@@ -108,7 +117,7 @@ export function ReportMatrix({ matrix, pivoted }: Props) {
               Total
             </th>
             {colTotals.map((n, i) => (
-              <td key={colLabels[i]} className="matrix-cell matrix-total">
+              <td key={i} className="matrix-cell matrix-total">
                 {n}
               </td>
             ))}

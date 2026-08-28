@@ -726,10 +726,14 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 32px;
-  /* The width control widens the frame only — the table keeps its own size, so
-     more columns fit rather than everything growing together. */
-  max-width: calc(680px * var(--report-zoom, 1));
-  width: 100%;
+  /* The frame sizes itself to its content: a wide matrix widens the card until
+     it hits the cap, a narrow one keeps the comfortable 680px reading width.
+     The +/- control moves the cap only — the table never scales, so widening
+     buys columns rather than magnifying everything.
+     min() against 96vw keeps the card on screen no matter how wide the cap. */
+  width: fit-content;
+  min-width: min(680px, 100%);
+  max-width: min(96vw, calc(680px * var(--report-zoom, 1)));
   max-height: 90vh;
   overflow: auto;
   box-shadow:

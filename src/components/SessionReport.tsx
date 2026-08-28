@@ -6,10 +6,13 @@ import { computeMatrix, computeOverview, computeSpeakerReport } from '../analyti
 import type { SpeakerReport } from '../analytics'
 import { ReportMatrix } from './ReportMatrix'
 
-// Frame width multipliers against the 680px default card.
-const ZOOM_MIN = 0.8
-const ZOOM_MAX = 2.4
-const ZOOM_STEP = 0.2
+// Cap on how wide the frame may grow, as a multiple of the 680px reading
+// width. The card auto-fits its content up to this, so the default is generous
+// enough that most tables need no adjustment at all.
+const ZOOM_MIN = 1
+const ZOOM_MAX = 3
+const ZOOM_STEP = 0.25
+const ZOOM_DEFAULT = 2.5
 
 function hueFor(word: string): number {
   let hash = 0
@@ -46,7 +49,7 @@ export function SessionReport() {
   )
   const [view, setView] = useState<'table' | 'list'>('table')
   const [pivoted, setPivoted] = useState(false)
-  const [zoom, setZoom] = useState(1)
+  const [zoom, setZoom] = useState(ZOOM_DEFAULT)
   // '' means "use the computed answer".
   const [cleanestOverride, setCleanestOverride] = useState('')
   const cleanest = cleanestOverride
@@ -214,10 +217,10 @@ export function SessionReport() {
                 <button
                   type="button"
                   className="footer-btn report-zoom-value"
-                  onClick={() => setZoom(1)}
-                  title="Frame width — reset to default"
+                  onClick={() => setZoom(ZOOM_DEFAULT)}
+                  title="The frame fits the table automatically up to this cap — click to reset"
                 >
-                  {Math.round(zoom * 100)}%
+                  {zoom === ZOOM_DEFAULT ? 'Auto' : `${Math.round(zoom * 100)}%`}
                 </button>
                 <button
                   type="button"

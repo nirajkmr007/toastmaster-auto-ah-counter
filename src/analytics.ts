@@ -54,10 +54,24 @@ export interface MatrixReport {
   max: number
 }
 
+/**
+ * Two speakers can legitimately share a name ("Anil" twice in one club), and a
+ * grid with two identically-labelled columns is unreadable. Suffix the repeats.
+ */
+function disambiguate(names: string[]): string[] {
+  const seen = new Map<string, number>()
+  return names.map((name) => {
+    const n = (seen.get(name) ?? 0) + 1
+    seen.set(name, n)
+    return n === 1 ? name : `${name} (${n})`
+  })
+}
+
 export function computeMatrix(speakers: Speaker[]): MatrixReport {
-  const merged = speakers.map((sp) => ({
+  const labels = disambiguate(speakers.map((sp) => sp.name))
+  const merged = speakers.map((sp, i) => ({
     id: sp.id,
-    name: sp.name,
+    name: labels[i],
     counts: { ...sp.soundCounts, ...sp.crutchCounts } as Record<string, number>,
   }))
 
