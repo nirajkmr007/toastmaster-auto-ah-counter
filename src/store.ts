@@ -6,6 +6,7 @@ import { TOASTMASTERS_CLASSIC } from './detection/presets'
 import { normalizeBlockedWord } from './detection/profanity'
 import { DEFAULT_MODEL_ID } from './audio/models'
 import { DEFAULT_THEME, applyTheme, type ThemeId } from './theme'
+import type { PortableSettings } from './settingsFile'
 
 export type FillerGroup = 'sound' | 'word'
 
@@ -85,6 +86,8 @@ export interface SessionState {
   setModelId: (id: string) => void
   toggleTranscript: () => void
   setTheme: (id: ThemeId) => void
+  /** Apply a validated settings file. Only the keys present are touched. */
+  importSettings: (s: PortableSettings) => void
   setLoadingMessage: (msg: string | null) => void
 
   addFiller: (word: string, group: FillerGroup) => void
@@ -217,6 +220,18 @@ export const useSessionStore = create<SessionState>()(
         applyTheme(theme)
         set({ theme })
       },
+
+      importSettings: (incoming) =>
+        set((state) => {
+          const next = { ...state, ...incoming }
+          // Re-assert the invariant the setters normally maintain: a speech
+          // length longer than the auto-stop is meaningless.
+          if (next.targetDurationMs != null) {
+            next.targetDurationMs = Math.min(next.targetDurationMs, next.hardStopMs)
+          }
+          if (incoming.theme) applyTheme(incoming.theme)
+          return next
+        }),
 
       addFiller: (raw, group) =>
         set((state) => {

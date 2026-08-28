@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useSessionStore } from '../store'
 import { canonicalFiller } from '../detection/detector'
 import { PRESETS } from '../detection/presets'
@@ -8,6 +8,11 @@ import {
   STRONG_BLOCKED_COUNT,
 } from '../detection/profanity'
 import { MODELS, getModel, isModelAvailable } from '../audio/models'
+import {
+  buildSettingsFile,
+  parseSettingsFile,
+  settingsFileName,
+} from '../settingsFile'
 
 // Full CRUD manager for the effective filler-word list. Sounds are shown by
 // canonical label (deleting one drops all its spelling variants); crutch words
@@ -31,10 +36,15 @@ export function SettingsPanel() {
   const modelId = useSessionStore((s) => s.modelId)
   const setModelId = useSessionStore((s) => s.setModelId)
   const isListening = useSessionStore((s) => s.status === 'listening')
+  const importSettings = useSessionStore((s) => s.importSettings)
 
   const [soundInput, setSoundInput] = useState('')
   const [wordInput, setWordInput] = useState('')
   const [blockedInput, setBlockedInput] = useState('')
+  const [importMsg, setImportMsg] = useState<{ ok: boolean; text: string } | null>(
+    null
+  )
+  const fileRef = useRef<HTMLInputElement | null>(null)
 
   // Sounds collapsed to canonical labels (um, uh, …), stable order.
   const sounds = useMemo(() => {
@@ -72,6 +82,55 @@ export function SettingsPanel() {
     if (!w) return
     addBlockedWord(w)
     setBlockedInput('')
+  }
+
+  const handleDownload = () => {
+    const s = useSessionStore.getState()
+    const body = buildSettingsFile({
+      wordList: s.wordList,
+      presetName: s.presetName,
+      sensitivity: s.sensitivity,
+      targetDurationMs: s.targetDurationMs,
+      hardStopMs: s.hardStopMs,
+      extraBlockedWords: s.extraBlockedWords,
+      maskMildWords: s.maskMildWords,
+      modelId: s.modelId,
+      theme: s.theme,
+      transcriptCollapsed: s.transcriptCollapsed,
+    })
+    const url = URL.createObjectURL(
+      new Blob([body], { type: 'application/json' })
+    )
+    const link = document.createElement('a')
+    link.href = url
+    link.download = settingsFileName()
+    link.click()
+    URL.revokeObjectURL(url)
+    setImportMsg({ ok: true, text: 'Settings downloaded.' })
+  }
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    // Reset the input so re-picking the same file fires change again.
+    e.target.value = ''
+    if (!file) return
+    try {
+      const { settings, error, warnings } = parseSettingsFile(await file.text())
+      if (!settings) {
+        setImportMsg({ ok: false, text: error ?? 'Could not read that file.' })
+        return
+      }
+      importSettings(settings)
+      const applied = Object.keys(settings).length
+      setImportMsg({
+        ok: true,
+        text:
+          `Applied ${applied} setting${applied === 1 ? '' : 's'}.` +
+          (warnings.length > 0 ? ` ${warnings.join('; ')}` : ''),
+      })
+    } catch {
+      setImportMsg({ ok: false, text: 'Could not read that file.' })
+    }
   }
 
   return (
@@ -255,6 +314,51 @@ export function SettingsPanel() {
                     </span>
                   ))}
                 </div>
+              ) : null}
+            </div>
+
+            <div className="settings-group">
+              <div className="settings-group-head">
+                <span className="settings-group-title">Backup &amp; restore</span>
+                <span className="settings-group-sub dim">
+                  Nothing is stored on a server, so settings live in this
+                  browser only. Download a file to carry them to another device
+                  — or to get them back after clearing your browser. The file
+                  holds settings only: no speech, transcripts, counts or speaker
+                  names.
+                </span>
+              </div>
+              <div className="settings-backup">
+                <button
+                  type="button"
+                  className="settings-add-btn"
+                  onClick={handleDownload}
+                >
+                  Download settings
+                </button>
+                <button
+                  type="button"
+                  className="settings-add-btn"
+                  onClick={() => fileRef.current?.click()}
+                >
+                  Upload settings
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className="settings-file-input"
+                  onChange={handleUpload}
+                />
+              </div>
+              {importMsg ? (
+                <p
+                  className={
+                    importMsg.ok ? 'settings-note-ok' : 'settings-note-bad'
+                  }
+                >
+                  {importMsg.text}
+                </p>
               ) : null}
             </div>
 

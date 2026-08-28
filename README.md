@@ -104,6 +104,24 @@ recall/precision knob to fight: A handles English, B specializes in sounds. The
 filler-sound list (recognizer B's grammar) and the crutch words are both edited
 in the ⚙ **Manage filler words** panel.
 
+### Backup & restore (portable settings file)
+
+Nothing is stored server-side, so settings live in one browser's localStorage —
+which means clearing the browser or moving to another laptop loses a carefully
+tuned filler list. ⚙ → **Backup & restore** exports a JSON file the user owns,
+and imports it back.
+
+The file carries **configuration only**: filler lists, preset name, sensitivity,
+speech length, auto-stop, masked words, model choice, theme. Never speech,
+transcripts, counts or speaker names — asserted by a test, not just by intent.
+
+`src/settingsFile.ts` treats an imported file as untrusted input, because it is:
+hand-edited, truncated, from a newer version, or simply the wrong JSON file. It
+checks types, clamps ranges, caps word and list lengths, normalises case,
+de-duplicates, migrates legacy values, ignores unknown keys, and falls back to
+the current value per field rather than rejecting the whole file. Partial files
+are valid and apply only the keys they contain.
+
 ### Accent model (US / Indian English)
 
 ⚙ → **Accent model** switches between US English and Indian English. Switching

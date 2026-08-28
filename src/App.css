@@ -1586,6 +1586,28 @@
   color: var(--text-dim);
 }
 
+/* ---- settings backup / restore ---- */
+.settings-backup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.settings-file-input {
+  display: none;
+}
+.settings-note-ok,
+.settings-note-bad {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.settings-note-ok {
+  color: var(--success);
+}
+.settings-note-bad {
+  color: var(--danger);
+}
+
 .settings-toggle {
   display: flex;
   align-items: center;

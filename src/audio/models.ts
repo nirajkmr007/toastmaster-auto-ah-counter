@@ -54,10 +54,19 @@ export interface ModelOption {
  * Set this to '' to disable the option — the toggle then renders visibly
  * disabled instead of shipping a button that fails.
  */
-const EN_IN_MODEL_URL = new URL(
-  `${import.meta.env.BASE_URL}models/vosk-model-small-en-in-0.4.tar.gz`,
-  window.location.href
-).href
+const EN_IN_MODEL_PATH = 'models/vosk-model-small-en-in-0.4.tar.gz'
+
+const EN_IN_MODEL_URL = (() => {
+  // Guarded so this module can be imported outside a browser (tests, tooling)
+  // without throwing on import.meta.env or window.
+  try {
+    const base = import.meta.env?.BASE_URL ?? '/'
+    if (typeof window === 'undefined') return `${base}${EN_IN_MODEL_PATH}`
+    return new URL(`${base}${EN_IN_MODEL_PATH}`, window.location.href).href
+  } catch {
+    return `/${EN_IN_MODEL_PATH}`
+  }
+})()
 
 export const MODELS: ModelOption[] = [
   {
