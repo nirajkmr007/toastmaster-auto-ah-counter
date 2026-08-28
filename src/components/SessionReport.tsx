@@ -6,9 +6,10 @@ import { computeMatrix, computeOverview, computeSpeakerReport } from '../analyti
 import type { SpeakerReport } from '../analytics'
 import { ReportMatrix } from './ReportMatrix'
 
-const ZOOM_MIN = 0.6
-const ZOOM_MAX = 1.6
-const ZOOM_STEP = 0.1
+// Frame width multipliers against the 680px default card.
+const ZOOM_MIN = 0.8
+const ZOOM_MAX = 2.4
+const ZOOM_STEP = 0.2
 
 function hueFor(word: string): number {
   let hash = 0
@@ -46,6 +47,9 @@ export function SessionReport() {
   const [view, setView] = useState<'table' | 'list'>('table')
   const [pivoted, setPivoted] = useState(false)
   const [zoom, setZoom] = useState(1)
+  // '' means "use the computed answer".
+  const [cleanestOverride, setCleanestOverride] = useState('')
+  const cleanest = cleanestOverride
 
   const handleSavePng = async () => {
     const node = cardRef.current
@@ -130,19 +134,31 @@ export function SessionReport() {
               <Metric label="Speakers" value={String(overview.speakerCount)} />
               <Metric label="Total fillers" value={String(overview.totalFillers)} />
               <Metric label="Meeting" value={formatDuration(overview.sessionSec)} />
-              <Metric
-                label="Cleanest speaker"
-                value={overview.cleanestName ?? '—'}
-              />
+              {/* Cleanest is a judgement call, not a fact: fewest fillers per
+                  minute rewards whoever spoke least. The computed answer is the
+                  default, but the chair can override it. */}
+              <div className="report-metric">
+                <select
+                  className="report-metric-select"
+                  value={cleanest}
+                  onChange={(e) => setCleanestOverride(e.target.value)}
+                  aria-label="Cleanest speaker"
+                  title="Defaults to fewest fillers per minute — change if the chair disagrees"
+                >
+                  {overview.cleanestName ? (
+                    <option value="">Auto: {overview.cleanestName}</option>
+                  ) : (
+                    <option value="">—</option>
+                  )}
+                  {speakers.map((sp) => (
+                    <option key={sp.id} value={sp.name}>
+                      {sp.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="report-metric-label">Cleanest speaker</div>
+              </div>
             </div>
-
-            {overview.mostName ? (
-              <p className="report-summary">
-                Speaker with most fillers this session:{' '}
-                <strong>{overview.mostName}</strong>. Cleanest speaker on the
-                floor: <strong>{overview.cleanestName ?? '—'}</strong>.
-              </p>
-            ) : null}
 
             <div className="report-toolbar">
               <div className="report-seg" role="group" aria-label="Report view">
@@ -175,7 +191,14 @@ export function SessionReport() {
                 </button>
               ) : null}
 
-              <div className="report-zoom" role="group" aria-label="Zoom">
+              {/* Widens the card, not the table. The point is to give a wide
+                  matrix room so every column is on screen (and in the PNG),
+                  which scaling the type up would defeat. */}
+              <div
+                className="report-zoom"
+                role="group"
+                aria-label="Report width"
+              >
                 <button
                   type="button"
                   className="footer-btn"
@@ -183,7 +206,8 @@ export function SessionReport() {
                     setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)))
                   }
                   disabled={zoom <= ZOOM_MIN}
-                  aria-label="Zoom out"
+                  aria-label="Narrower"
+                  title="Narrower frame"
                 >
                   −
                 </button>
@@ -191,7 +215,7 @@ export function SessionReport() {
                   type="button"
                   className="footer-btn report-zoom-value"
                   onClick={() => setZoom(1)}
-                  title="Reset zoom"
+                  title="Frame width — reset to default"
                 >
                   {Math.round(zoom * 100)}%
                 </button>
@@ -202,7 +226,8 @@ export function SessionReport() {
                     setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)))
                   }
                   disabled={zoom >= ZOOM_MAX}
-                  aria-label="Zoom in"
+                  aria-label="Wider"
+                  title="Wider frame — fits more columns"
                 >
                   +
                 </button>

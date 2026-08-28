@@ -717,15 +717,17 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  overflow-y: auto;
+  /* Both axes: a wide frame can exceed the viewport, and it should be
+     scrollable rather than clipped. */
+  overflow: auto;
 }
 .report-card {
   background: linear-gradient(180deg, var(--card-top) 0%, var(--card-bottom) 100%);
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 32px;
-  /* Zoom widens the card as well as the type, so a wide matrix has somewhere to
-     go before it starts scrolling sideways. */
+  /* The width control widens the frame only — the table keeps its own size, so
+     more columns fit rather than everything growing together. */
   max-width: calc(680px * var(--report-zoom, 1));
   width: 100%;
   max-height: 90vh;
@@ -783,19 +785,19 @@
 .matrix {
   border-collapse: separate;
   border-spacing: 3px;
-  font-size: calc(13px * var(--report-zoom, 1));
+  font-size: 13px;
   width: 100%;
 }
 .matrix th,
 .matrix td {
-  padding: calc(7px * var(--report-zoom, 1)) calc(9px * var(--report-zoom, 1));
+  padding: 7px 9px;
   border-radius: 6px;
   white-space: nowrap;
 }
 .matrix-corner {
   text-align: left;
   color: var(--text-dim);
-  font-size: calc(11px * var(--report-zoom, 1));
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -820,7 +822,7 @@
   font-family: var(--mono);
   color: var(--text);
   background: var(--wash-soft);
-  min-width: calc(38px * var(--report-zoom, 1));
+  min-width: 38px;
 }
 .matrix-zero {
   color: var(--text-dim);
@@ -833,7 +835,7 @@
   font-weight: 600;
 }
 .matrix-total-head {
-  font-size: calc(11px * var(--report-zoom, 1));
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -921,6 +923,25 @@
   font-weight: 600;
   color: var(--text-h);
 }
+/* Sized to match .report-metric-value so the metric strip stays even whether a
+   tile shows a number or this dropdown. */
+.report-metric-select {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--border);
+  padding: 0 0 2px;
+  max-width: 100%;
+  cursor: pointer;
+  outline: none;
+}
+.report-metric-select:hover,
+.report-metric-select:focus {
+  border-bottom-color: var(--accent);
+}
 .report-metric-label {
   font-size: 11px;
   color: var(--text-dim);
@@ -928,16 +949,6 @@
   letter-spacing: 0.08em;
 }
 
-.report-summary {
-  margin: 0;
-  padding: 14px 16px;
-  border-left: 3px solid var(--accent);
-  background: var(--accent-soft);
-  border-radius: 4px;
-  color: var(--text-h);
-  font-size: 14px;
-  line-height: 1.5;
-}
 
 .report-word-list {
   list-style: none;

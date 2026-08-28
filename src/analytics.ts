@@ -28,7 +28,10 @@ export interface OverviewReport {
   speakerCount: number
   totalFillers: number
   sessionSec: number
-  cleanestName: string | null // fewest fillers/min among speakers who spoke
+  // Default for the report's Cleanest dropdown: fewest fillers/min among
+  // speakers who actually spoke. The chair can override it in the UI, since
+  // "fewest per minute" quietly rewards whoever said least.
+  cleanestName: string | null
   mostName: string | null // most total fillers
 }
 

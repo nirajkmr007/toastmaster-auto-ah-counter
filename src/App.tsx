@@ -43,7 +43,10 @@ function App() {
   const transcriptCollapsed = useSessionStore((s) => s.transcriptCollapsed)
   const theme = useSessionStore((s) => s.theme)
   const setTheme = useSessionStore((s) => s.setTheme)
-  const hasEndedSession = useSessionStore((s) => s.sessionEndAt !== null)
+  // The report is available as soon as a speaker exists — the app is fully
+  // usable as a manual tally board without ever starting the recognizer, and
+  // gating the report on a finished Vosk session hid it from those users.
+  const hasSpeakers = useSessionStore((s) => s.speakers.length > 0)
   const hasData = useSessionStore((s) =>
     s.speakers.some(
       (sp) =>
@@ -302,12 +305,12 @@ function App() {
           Two Vosk recognizers · session-only, nothing is stored
         </span>
         <div className="footer-actions">
-          {hasEndedSession ? (
+          {hasSpeakers ? (
             <button
               type="button"
               className="footer-btn"
               onClick={openReport}
-              title="Reopen the last session report"
+              title="Open the session report"
             >
               View report
             </button>
