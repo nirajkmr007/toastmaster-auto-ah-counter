@@ -32,6 +32,58 @@ export interface OverviewReport {
   mostName: string | null // most total fillers
 }
 
+/**
+ * Speakers x filler-words grid for the heat-map table.
+ *
+ * Only words that actually occurred become columns — the configured list runs
+ * to ~24 entries and a grid of mostly zeros hides the signal. Columns are
+ * ordered by total count so the worst offenders sit left, where the eye lands.
+ */
+export interface MatrixReport {
+  speakers: { id: string; name: string }[]
+  words: string[]
+  /** counts[speakerIndex][wordIndex] */
+  counts: number[][]
+  speakerTotals: number[]
+  wordTotals: number[]
+  grandTotal: number
+  /** Largest single cell — the heat scale's upper bound. */
+  max: number
+}
+
+export function computeMatrix(speakers: Speaker[]): MatrixReport {
+  const merged = speakers.map((sp) => ({
+    id: sp.id,
+    name: sp.name,
+    counts: { ...sp.soundCounts, ...sp.crutchCounts } as Record<string, number>,
+  }))
+
+  const totals = new Map<string, number>()
+  for (const sp of merged) {
+    for (const [word, n] of Object.entries(sp.counts)) {
+      if (n > 0) totals.set(word, (totals.get(word) ?? 0) + n)
+    }
+  }
+  const words = [...totals.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([w]) => w)
+
+  const counts = merged.map((sp) => words.map((w) => sp.counts[w] ?? 0))
+  const speakerTotals = counts.map((row) => row.reduce((a, b) => a + b, 0))
+  const wordTotals = words.map((w) => totals.get(w) ?? 0)
+  const max = counts.reduce((m, row) => Math.max(m, ...row, 0), 0)
+
+  return {
+    speakers: merged.map(({ id, name }) => ({ id, name })),
+    words,
+    counts,
+    speakerTotals,
+    wordTotals,
+    grandTotal: speakerTotals.reduce((a, b) => a + b, 0),
+    max,
+  }
+}
+
 const tokenize = (text: string): string[] =>
   text
     .toLowerCase()

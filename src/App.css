@@ -724,10 +724,12 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 32px;
-  max-width: 680px;
+  /* Zoom widens the card as well as the type, so a wide matrix has somewhere to
+     go before it starts scrolling sideways. */
+  max-width: calc(680px * var(--report-zoom, 1));
   width: 100%;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow: auto;
   box-shadow:
     var(--shadow-lg),
     0 0 0 1px var(--accent-inset) inset;
@@ -735,6 +737,132 @@
   flex-direction: column;
   gap: 20px;
 }
+/* ---- report toolbar: view / pivot / zoom ---- */
+.report-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.report-seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.report-seg-btn {
+  padding: 7px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+}
+.report-seg-btn.on {
+  background: var(--accent-soft);
+  color: var(--text-h);
+  font-weight: 600;
+}
+.report-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.report-zoom-value {
+  min-width: 62px;
+  font-family: var(--mono);
+}
+
+/* ---- heat-map matrix ----
+   Sizes key off --report-zoom so zooming changes real layout, not a transform:
+   a transform would leave the exported PNG at the original size. */
+.matrix-wrap {
+  overflow-x: auto;
+}
+.matrix {
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: calc(13px * var(--report-zoom, 1));
+  width: 100%;
+}
+.matrix th,
+.matrix td {
+  padding: calc(7px * var(--report-zoom, 1)) calc(9px * var(--report-zoom, 1));
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.matrix-corner {
+  text-align: left;
+  color: var(--text-dim);
+  font-size: calc(11px * var(--report-zoom, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.matrix-col-head {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--text-h);
+  background: var(--bg-elev-2);
+  text-align: center;
+  vertical-align: bottom;
+}
+.matrix-row-head {
+  text-align: left;
+  color: var(--text-h);
+  background: var(--bg-elev-2);
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+}
+.matrix-cell {
+  text-align: center;
+  font-family: var(--mono);
+  color: var(--text);
+  background: var(--wash-soft);
+  min-width: calc(38px * var(--report-zoom, 1));
+}
+.matrix-zero {
+  color: var(--text-dim);
+  background: transparent;
+}
+.matrix-total,
+.matrix-total-head {
+  background: var(--bg-elev-2);
+  color: var(--text-h);
+  font-weight: 600;
+}
+.matrix-total-head {
+  font-size: calc(11px * var(--report-zoom, 1));
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.matrix-grand {
+  background: var(--accent-soft);
+}
+.matrix-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11px;
+  flex-wrap: wrap;
+}
+.matrix-legend-ramp {
+  width: 120px;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    hsl(145 72% 45% / 0.18),
+    hsl(76 72% 45% / 0.45),
+    hsl(8 72% 45% / 0.72)
+  );
+}
+.matrix-legend-note {
+  margin-left: auto;
+}
+
 .report-header {
   display: flex;
   justify-content: space-between;

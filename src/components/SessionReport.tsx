@@ -2,8 +2,13 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useMemo, useRef, useState } from 'react'
 import { toPng } from 'html-to-image'
 import { useSessionStore } from '../store'
-import { computeOverview, computeSpeakerReport } from '../analytics'
+import { computeMatrix, computeOverview, computeSpeakerReport } from '../analytics'
 import type { SpeakerReport } from '../analytics'
+import { ReportMatrix } from './ReportMatrix'
+
+const ZOOM_MIN = 0.6
+const ZOOM_MAX = 1.6
+const ZOOM_STEP = 0.1
 
 function hueFor(word: string): number {
   let hash = 0
@@ -32,21 +37,39 @@ export function SessionReport() {
     () => speakers.map(computeSpeakerReport),
     [speakers]
   )
+  const matrix = useMemo(() => computeMatrix(speakers), [speakers])
 
   const cardRef = useRef<HTMLDivElement | null>(null)
   const [exportState, setExportState] = useState<'idle' | 'exporting' | 'error'>(
     'idle'
   )
+  const [view, setView] = useState<'table' | 'list'>('table')
+  const [pivoted, setPivoted] = useState(false)
+  const [zoom, setZoom] = useState(1)
 
   const handleSavePng = async () => {
     const node = cardRef.current
     if (!node) return
     setExportState('exporting')
     try {
+      // The card scrolls, so a plain capture stops at the visible box and the
+      // bottom of a long report is silently missing from the PNG. Measure the
+      // full scroll extent and tell html-to-image to render the clone
+      // unclipped at that size — the export is then complete at any zoom.
+      const width = Math.ceil(node.scrollWidth)
+      const height = Math.ceil(node.scrollHeight)
       const dataUrl = await toPng(node, {
         pixelRatio: 2,
         cacheBust: true,
-        backgroundColor: '#0d0f14',
+        backgroundColor: getComputedStyle(node).backgroundColor || undefined,
+        width,
+        height,
+        style: {
+          maxHeight: 'none',
+          height: `${height}px`,
+          width: `${width}px`,
+          overflow: 'visible',
+        },
       })
       const link = document.createElement('a')
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')
@@ -75,6 +98,7 @@ export function SessionReport() {
           <motion.div
             className="report-card"
             ref={cardRef}
+            style={{ '--report-zoom': zoom } as React.CSSProperties}
             initial={{ y: 60, opacity: 0, scale: 0.98 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 40, opacity: 0, scale: 0.98 }}
@@ -120,12 +144,80 @@ export function SessionReport() {
               </p>
             ) : null}
 
-            {/* Per-speaker sections */}
-            <div className="report-speakers">
-              {speakerReports.map((r) => (
-                <SpeakerSection key={r.id} report={r} />
-              ))}
+            <div className="report-toolbar">
+              <div className="report-seg" role="group" aria-label="Report view">
+                <button
+                  type="button"
+                  className={`report-seg-btn${view === 'table' ? ' on' : ''}`}
+                  onClick={() => setView('table')}
+                  aria-pressed={view === 'table'}
+                >
+                  Table
+                </button>
+                <button
+                  type="button"
+                  className={`report-seg-btn${view === 'list' ? ' on' : ''}`}
+                  onClick={() => setView('list')}
+                  aria-pressed={view === 'list'}
+                >
+                  Per speaker
+                </button>
+              </div>
+
+              {view === 'table' ? (
+                <button
+                  type="button"
+                  className="footer-btn"
+                  onClick={() => setPivoted((p) => !p)}
+                  title="Swap rows and columns"
+                >
+                  Pivot: {pivoted ? 'words as rows' : 'speakers as rows'}
+                </button>
+              ) : null}
+
+              <div className="report-zoom" role="group" aria-label="Zoom">
+                <button
+                  type="button"
+                  className="footer-btn"
+                  onClick={() =>
+                    setZoom((z) => Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2)))
+                  }
+                  disabled={zoom <= ZOOM_MIN}
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  className="footer-btn report-zoom-value"
+                  onClick={() => setZoom(1)}
+                  title="Reset zoom"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
+                <button
+                  type="button"
+                  className="footer-btn"
+                  onClick={() =>
+                    setZoom((z) => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)))
+                  }
+                  disabled={zoom >= ZOOM_MAX}
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+              </div>
             </div>
+
+            {view === 'table' ? (
+              <ReportMatrix matrix={matrix} pivoted={pivoted} />
+            ) : (
+              <div className="report-speakers">
+                {speakerReports.map((r) => (
+                  <SpeakerSection key={r.id} report={r} />
+                ))}
+              </div>
+            )}
 
             <div className="report-actions">
               <button
